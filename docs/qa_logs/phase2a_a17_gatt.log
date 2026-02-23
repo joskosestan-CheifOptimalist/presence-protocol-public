@@ -1,0 +1,16 @@
+02-24 09:00:16.981 25647 25647 D PresenceDiscovery: Presence BLE discovery stopped
+02-24 09:00:17.050 25647 25647 D PresenceDiscovery: Presence BLE discovery started
+02-24 09:00:17.238 25647 25647 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]
+02-24 09:01:19.133 25647 25647 D PresenceDiscovery: Presence BLE discovery stopped
+02-24 09:01:19.168 25647 25647 D PresenceDiscovery: Presence BLE discovery started
+02-24 09:01:19.332 25647 25647 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]
+02-24 10:17:25.767  7902  7902 D PresenceDiscovery: Presence BLE discovery started
+02-24 10:17:26.478  7902  7902 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]
+02-24 10:17:46.388  7902  7902 D PresenceGatt: GattServer addService ok=true service=7d3a2d6b-9b7a-4f2a-9e5e-0c9d6f1b1c01
+02-24 10:17:46.388  7902  7902 D PresenceGatt: Presence GATT server started
+02-24 10:18:12.937  7902  7981 D PresenceGatt: onConnectionStateChange device=46:98:92:64:35:42 status=0 newState=2
+02-24 10:18:28.902  7902  7981 D PresenceGatt: onConnectionStateChange device=46:98:92:64:35:42 status=0 newState=0
+02-24 10:19:43.454  7902  7981 D PresenceGatt: onConnectionStateChange device=6D:BB:E9:50:FF:CC status=0 newState=2
+02-24 10:19:48.612  7902  7981 D PresenceGatt: onConnectionStateChange device=6D:BB:E9:50:FF:CC status=0 newState=0
+02-24 10:19:54.007  7902  7981 D PresenceGatt: onConnectionStateChange device=43:AF:BD:7E:55:91 status=0 newState=2
+02-24 10:19:59.051  7902  7981 D PresenceGatt: onConnectionStateChange device=43:AF:BD:7E:55:91 status=0 newState=0
