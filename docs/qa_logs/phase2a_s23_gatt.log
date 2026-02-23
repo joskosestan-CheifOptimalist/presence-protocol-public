@@ -1,0 +1,4 @@
+02-24 10:34:10.691 12657 12657 D PresenceDiscovery: Presence BLE discovery started
+02-24 10:34:10.950 12657 12657 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]
+02-24 10:34:21.114 12657 12657 D PresenceGatt: GattServer addService ok=true service=7d3a2d6b-9b7a-4f2a-9e5e-0c9d6f1b1c01
+02-24 10:34:21.114 12657 12657 D PresenceGatt: Presence GATT server started

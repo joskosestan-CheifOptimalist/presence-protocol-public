@@ -11,3 +11,8 @@
 - Log evidence:
   - docs/qa_logs/phase1_s23.log
   - docs/qa_logs/phase1_a17.log
+## Phase 2A — GATT Transport (Server Start)
+
+- PASS: GATT server starts + discovery starts on both devices
+  - A17 log: docs/qa_logs/phase2a_a17_gatt.log
+  - S23 log: docs/qa_logs/phase2a_s23_gatt.log
