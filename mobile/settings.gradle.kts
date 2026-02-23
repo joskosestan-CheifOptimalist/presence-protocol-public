@@ -23,6 +23,13 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Presence-Protocol"
-include(":presence-relay-app")
-include(":presence-relay-sdk")
-include(":presence-relay-shared")
+include(
+    ":app",
+    ":core-common",
+    ":core-crypto",
+    ":core-storage",
+    ":domain",
+    ":data-ble",
+    ":data-storage",
+    ":feature-relay"
+)
