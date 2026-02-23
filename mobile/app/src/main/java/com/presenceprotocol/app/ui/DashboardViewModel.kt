@@ -1,5 +1,7 @@
 package com.presenceprotocol.app.ui
 
+import com.presenceprotocol.data.ble.gatt.PresenceGattServer
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.presenceprotocol.data.ble.PresenceDiscoveryController
@@ -11,6 +13,7 @@ import kotlinx.coroutines.launch
 
 class DashboardViewModel(
     private val ledger: MiningLedger,
+    private val gattServer: PresenceGattServer,
     private val syncCoordinator: SyncCoordinator,
     private val discoveryController: PresenceDiscoveryController
 ) : ViewModel() {
@@ -64,6 +67,15 @@ class DashboardViewModel(
     fun toggleMining() {
         val next = !_uiState.value.isMining
         _uiState.value = _uiState.value.copy(isMining = next)
+
+        if (next) {
+            // Start Peripheral (GATT server) + Discovery
+            gattServer.start()
+            discoveryController.start()
+        } else {
+            discoveryController.stop()
+            gattServer.stop()
+        }
     }
 
     fun showDeveloperPanel(show: Boolean) {
