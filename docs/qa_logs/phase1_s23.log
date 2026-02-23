@@ -1,0 +1,4 @@
+02-24 08:40:58.084 26364 26364 D PresenceDiscovery: Presence BLE discovery started
+02-24 08:40:58.102 26364 26364 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]
+02-24 08:44:01.728 27547 27547 D PresenceDiscovery: Presence BLE discovery started
+02-24 08:44:01.732 27547 27547 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]

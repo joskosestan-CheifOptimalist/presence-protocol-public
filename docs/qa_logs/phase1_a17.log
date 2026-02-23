@@ -1,0 +1,6 @@
+02-24 09:00:16.981 25647 25647 D PresenceDiscovery: Presence BLE discovery stopped
+02-24 09:00:17.050 25647 25647 D PresenceDiscovery: Presence BLE discovery started
+02-24 09:00:17.238 25647 25647 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]
+02-24 09:01:19.133 25647 25647 D PresenceDiscovery: Presence BLE discovery stopped
+02-24 09:01:19.168 25647 25647 D PresenceDiscovery: Presence BLE discovery started
+02-24 09:01:19.332 25647 25647 D PresenceDiscovery: Advertising started: Settings [mAdvertiseMode=2, mAdvertiseTxPowerLevel=2, mAdvertiseConnectable=true, mAdvertiseDiscoverable=true, mAdvertiseTimeoutMillis=0, mOwnAddressType=-1]

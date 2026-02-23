@@ -17,3 +17,6 @@
 *.keystore
 *.jks
 .env*
+
+# Allow QA evidence logs
+!docs/qa_logs/*.log
