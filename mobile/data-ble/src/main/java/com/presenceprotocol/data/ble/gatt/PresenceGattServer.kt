@@ -1,25 +1,30 @@
 package com.presenceprotocol.data.ble.gatt
 
 import android.annotation.SuppressLint
-import android.bluetooth.*
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothGattServer
+import android.bluetooth.BluetoothGattServerCallback
+import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.util.Log
+import com.presenceprotocol.core.common.cbor.PresenceCborPackets
+import com.presenceprotocol.core.common.handshake.ReplyPacket
 import java.util.UUID
 
 /**
- * Phase 2A: GATT transport skeleton (Peripheral / Server role).
- *
- * This hosts the Presence service + characteristics.
- * Handshake logic comes later; for now we just:
- *  - start/stop server
- *  - expose service UUID + HELLO/REPLY/RESULT characteristics
- *  - log key lifecycle events
+ * Phase 2B: HELLO → REPLY transport proof (Peripheral / Server role).
  */
 class PresenceGattServer(
     private val context: Context
 ) {
     private var gattServer: BluetoothGattServer? = null
     private var serverStarted: Boolean = false
+    private var replyCharacteristic: BluetoothGattCharacteristic? = null
+    private val notifyEnabled = mutableSetOf<String>()
 
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(BluetoothManager::class.java)
@@ -38,7 +43,11 @@ class PresenceGattServer(
             offset: Int,
             value: ByteArray
         ) {
-            Log.d(TAG, "onWrite char=${characteristic.uuid} from=${device.address} bytes=${value.size} responseNeeded=$responseNeeded")
+            if (characteristic.uuid == PresenceGattUuids.HELLO_CHAR_UUID) {
+                handleHelloWrite(device, value)
+            } else {
+                Log.d(TAG, "onWrite char=${characteristic.uuid} from=${device.address} bytes=${value.size}")
+            }
             if (responseNeeded) {
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, byteArrayOf())
             }
@@ -53,11 +62,53 @@ class PresenceGattServer(
             offset: Int,
             value: ByteArray
         ) {
-            Log.d(TAG, "onDescriptorWrite desc=${descriptor.uuid} from=${device.address} bytes=${value.size} responseNeeded=$responseNeeded")
+            if (descriptor.uuid.toString().equals(CCCD_UUID, ignoreCase = true)) {
+                val enabled = value.contentEquals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                if (enabled) {
+                    notifyEnabled.add(device.address)
+                } else if (value.contentEquals(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE)) {
+                    notifyEnabled.remove(device.address)
+                }
+                Log.d(TAG, "CCCD device=${device.address} enabled=$enabled")
+            } else {
+                Log.d(TAG, "onDescriptorWrite desc=${descriptor.uuid} from=${device.address} bytes=${value.size}")
+            }
             if (responseNeeded) {
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, byteArrayOf())
             }
         }
+    }
+
+    private fun handleHelloWrite(device: BluetoothDevice, value: ByteArray) {
+        try {
+            val hello = PresenceCborPackets.decodeHello(value)
+            Log.d(
+                TAG,
+                "HELLO_RX addr=${device.address} bytes=${value.size} ver=${hello.version} sid=${hello.sessionId.size} nonce=${hello.nonce.size}"
+            )
+            val reply = ReplyPacket(
+                version = hello.version,
+                sessionId = hello.sessionId,
+                nonce = hello.nonce,
+                serverPublicKey = ByteArray(32),
+                signature = ByteArray(64),
+                statusCode = 0
+            )
+            val payload = PresenceCborPackets.encodeReply(reply)
+            val ok = notifyIfEnabled(device, payload)
+            Log.d(TAG, "REPLY_TX addr=${device.address} ok=$ok bytes=${payload.size}")
+        } catch (t: Throwable) {
+            Log.w(TAG, "HELLO_RX decode failed from=${device.address} err=${t.message}")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun notifyIfEnabled(device: BluetoothDevice, payload: ByteArray): Boolean {
+        val server = gattServer ?: return false
+        val characteristic = replyCharacteristic ?: return false
+        if (!notifyEnabled.contains(device.address)) return false
+	characteristic.value = payload
+	return server.notifyCharacteristicChanged(device, characteristic, false)
     }
 
     @SuppressLint("MissingPermission")
@@ -76,7 +127,6 @@ class PresenceGattServer(
             return false
         }
 
-        // Build service + characteristics
         val service = BluetoothGattService(
             PresenceGattUuids.PRESENCE_SERVICE_UUID,
             BluetoothGattService.SERVICE_TYPE_PRIMARY
@@ -84,17 +134,16 @@ class PresenceGattServer(
 
         val hello = BluetoothGattCharacteristic(
             PresenceGattUuids.HELLO_CHAR_UUID,
-            /* properties */ BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
-            /* permissions */ BluetoothGattCharacteristic.PERMISSION_WRITE
+            BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
+            BluetoothGattCharacteristic.PERMISSION_WRITE
         )
 
         val reply = BluetoothGattCharacteristic(
             PresenceGattUuids.REPLY_CHAR_UUID,
-            /* properties */ BluetoothGattCharacteristic.PROPERTY_NOTIFY,
-            /* permissions */ BluetoothGattCharacteristic.PERMISSION_READ
+            BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+            BluetoothGattCharacteristic.PERMISSION_READ
         )
 
-        // Standard CCCD required for notifications
         val cccd = BluetoothGattDescriptor(
             UUID.fromString(CCCD_UUID),
             BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
@@ -103,13 +152,14 @@ class PresenceGattServer(
 
         val result = BluetoothGattCharacteristic(
             PresenceGattUuids.RESULT_CHAR_UUID,
-            /* properties */ BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
-            /* permissions */ BluetoothGattCharacteristic.PERMISSION_WRITE
+            BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
+            BluetoothGattCharacteristic.PERMISSION_WRITE
         )
 
         service.addCharacteristic(hello)
         service.addCharacteristic(reply)
         service.addCharacteristic(result)
+        replyCharacteristic = reply
 
         val ok = server.addService(service)
         Log.d(TAG, "GattServer addService ok=$ok service=${PresenceGattUuids.PRESENCE_SERVICE_UUID}")
@@ -129,6 +179,8 @@ class PresenceGattServer(
         }
         gattServer = null
         serverStarted = false
+        notifyEnabled.clear()
+        replyCharacteristic = null
         Log.d(TAG, "Presence GATT server stopped")
     }
 

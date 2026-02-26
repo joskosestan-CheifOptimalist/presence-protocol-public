@@ -20,3 +20,7 @@
 
 # Allow QA evidence logs
 !docs/qa_logs/*.log
+
+# --- Generated / local ---
+mobile/android/
+**/*.bak_fix

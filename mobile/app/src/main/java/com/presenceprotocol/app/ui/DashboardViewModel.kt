@@ -61,22 +61,36 @@ class DashboardViewModel(
         if (discoveryStarted) {
             discoveryController.stop()
             discoveryStarted = false
-        }
+       }
     }
 
+
     fun toggleMining() {
+        android.util.Log.e("PP_BLE", "VM: toggle handler entered")
         val next = !_uiState.value.isMining
         _uiState.value = _uiState.value.copy(isMining = next)
 
+        android.util.Log.e("PP_BLE", "VM: BLE_ROLE=${BleConfig.BLE_ROLE} next=$next")
+
         if (next) {
-            // Start Peripheral (GATT server) + Discovery
-            gattServer.start()
             discoveryController.start()
+            if (BleConfig.BLE_ROLE != BleRole.CLIENT_ONLY) {
+                android.util.Log.e("PP_BLE", "VM: starting GATT SERVER")
+                gattServer.start()
+            } else {
+                android.util.Log.e("PP_BLE", "VM: skipping GATT SERVER (client-only)")
+            }
         } else {
+            android.util.Log.e("PP_BLE", "VM: disabling server + discovery")
             discoveryController.stop()
-            gattServer.stop()
+            if (BleConfig.BLE_ROLE != BleRole.CLIENT_ONLY) {
+                gattServer.stop()
+            } else {
+                android.util.Log.e("PP_BLE", "VM: skipping GATT SERVER stop (client-only)")
+            }
         }
     }
+
 
     fun showDeveloperPanel(show: Boolean) {
         _uiState.value = _uiState.value.copy(showDeveloperPanel = show)

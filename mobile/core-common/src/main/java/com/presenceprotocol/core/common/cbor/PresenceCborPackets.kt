@@ -1,5 +1,7 @@
 package com.presenceprotocol.core.common.cbor
 
+import com.presenceprotocol.core.common.handshake.HelloPacket
+import com.presenceprotocol.core.common.handshake.ReplyPacket
 import com.upokecenter.cbor.CBORObject
 
 object PresenceCborPackets {
@@ -11,6 +13,29 @@ object PresenceCborPackets {
             nonce = map.getField(KEY_NONCE).asByteString(),
             clientPublicKey = map.getField(KEY_CLIENT_PK).asByteString(),
             timestampSeconds = map.getField(KEY_TIMESTAMP).AsInt64()
+        )
+    }
+
+    fun encodeHello(packet: HelloPacket): ByteArray {
+        val obj = CBORObject.NewMap().apply {
+            putKey(KEY_VERSION, CBORObject.FromObject(packet.version))
+            putKey(KEY_SESSION_ID, CBORObject.FromObject(packet.sessionId))
+            putKey(KEY_NONCE, CBORObject.FromObject(packet.nonce))
+            putKey(KEY_CLIENT_PK, CBORObject.FromObject(packet.clientPublicKey))
+            putKey(KEY_TIMESTAMP, CBORObject.FromObject(packet.timestampSeconds))
+        }
+        return obj.EncodeToBytes()
+    }
+
+    fun decodeReply(bytes: ByteArray): ReplyPacket {
+        val map = CBORObject.DecodeFromBytes(bytes)
+        return ReplyPacket(
+            version = map.getField(KEY_VERSION).AsInt32(),
+            sessionId = map.getField(KEY_SESSION_ID).asByteString(),
+            nonce = map.getField(KEY_NONCE).asByteString(),
+            serverPublicKey = map.getField(KEY_SERVER_PK).asByteString(),
+            signature = map.getField(KEY_SIGNATURE).asByteString(),
+            statusCode = map.getField(KEY_STATUS).AsInt32()
         )
     }
 
