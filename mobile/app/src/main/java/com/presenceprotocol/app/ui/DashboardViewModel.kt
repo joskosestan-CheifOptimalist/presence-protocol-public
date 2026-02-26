@@ -1,6 +1,8 @@
 package com.presenceprotocol.app.ui
 
 import com.presenceprotocol.data.ble.gatt.PresenceGattServer
+import com.presenceprotocol.app.BleConfig
+import com.presenceprotocol.app.BleRole
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

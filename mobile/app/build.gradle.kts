@@ -17,6 +17,29 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    flavorDimensions += "role"
+    productFlavors {
+        create("client") {
+            dimension = "role"
+            buildConfigField("String", "BLE_ROLE", "\"CLIENT_ONLY\"")
+            applicationIdSuffix = ".client"
+            versionNameSuffix = "-client"
+        }
+        create("server") {
+            dimension = "role"
+            buildConfigField("String", "BLE_ROLE", "\"SERVER_ONLY\"")
+            applicationIdSuffix = ".server"
+            versionNameSuffix = "-server"
+        }
+        create("both") {
+            dimension = "role"
+            buildConfigField("String", "BLE_ROLE", "\"BOTH\"")
+            applicationIdSuffix = ".both"
+            versionNameSuffix = "-both"
+        }
     }
 
     composeOptions {
