@@ -94,6 +94,7 @@ class PresenceDiscoveryController(
             started.set(false)
             return
         }
+        Log.e(TAG, "PP_DISCOVERY: start() -> PP_DISCOVERY START role=${BleConfig.BLE_ROLE}")
         startAdvertising()
         startScanning()
         cleanupJob = scope.launch { pruneLoop() }
@@ -132,6 +133,7 @@ class PresenceDiscoveryController(
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
         scanner.startScan(listOf(filter), settings, scanCallback)
+        Log.e(TAG, "PP_DISCOVERY: startScanning() -> PP_DISCOVERY START_SCAN filters=${filter}")
     }
 
     @SuppressLint("MissingPermission")
@@ -153,6 +155,7 @@ class PresenceDiscoveryController(
             .setIncludeDeviceName(false)
             .build()
         advertiser.startAdvertising(settings, data, advertiseCallback)
+        Log.e(TAG, "PP_DISCOVERY: startAdvertising() -> PP_DISCOVERY START_ADVERTISE")
     }
 
     @SuppressLint("MissingPermission")
@@ -168,6 +171,15 @@ class PresenceDiscoveryController(
         lastSeenMap[peerId] = nowElapsed
         _peerEvents.tryEmit(PeerEvent(peerId, Instant.now()))
         updateMetrics(nowElapsed)
+
+        Log.e(TAG, "PP_DISCOVERY SCAN_RESULT addr=")
+        Log.e(TAG, "PP_DISCOVERY SCAN_RESULT rssi=${result.rssi} match=${isMatchingPeer(device)}")
+
+        // Minimal connect attempt
+        if ((BleConfig.BLE_ROLE == BleRole.BOTH || BleConfig.BLE_ROLE == BleRole.CLIENT_ONLY) && !isConnected) {
+            connectGatt(device)
+            Log.e(TAG, "PP_HANDSHAKE: CONNECT_START addr=${device.address}")
+        }
     }
 
     private suspend fun pruneLoop() {
