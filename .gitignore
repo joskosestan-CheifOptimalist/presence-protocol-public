@@ -24,3 +24,10 @@
 # --- Generated / local ---
 mobile/android/
 **/*.bak_fix
+# local dev artefacts
+_quarantine_*/
+*.bak
+*.backup
+*.bak.*
+*.kt.backup
+*.kt.bak*
