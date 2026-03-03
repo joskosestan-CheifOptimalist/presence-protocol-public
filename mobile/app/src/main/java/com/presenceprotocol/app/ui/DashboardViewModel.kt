@@ -75,12 +75,23 @@ class DashboardViewModel(
         android.util.Log.e("PP_BLE", "VM: BLE_ROLE=${BleConfig.BLE_ROLE} next=$next")
 
         if (next) {
-            discoveryController.start()
-            if (BleConfig.BLE_ROLE != BleRole.CLIENT_ONLY) {
+            // Updated conditional logic for BOTH role
+            if (BleConfig.BLE_ROLE == BleRole.CLIENT_ONLY) {
+                // Only start discovery for client
+                android.util.Log.e("PP_BLE", "VM: starting DISCOVERY")
+                discoveryController.start()
+            } else if (BleConfig.BLE_ROLE == BleRole.SERVER_ONLY) {
+                // Start GATT server + advertise for server
                 android.util.Log.e("PP_BLE", "VM: starting GATT SERVER")
                 gattServer.start()
-            } else {
-                android.util.Log.e("PP_BLE", "VM: skipping GATT SERVER (client-only)")
+                android.util.Log.e("PP_BLE", "VM: starting ADVERTISING")
+                gattServer.startAdvertising(connectable = true)
+            } else if (BleConfig.BLE_ROLE == BleRole.BOTH) {
+                // Start both discovery + advertising + GATT server
+                android.util.Log.e("PP_BLE", "VM: starting DISCOVERY + ADVERTISING + GATT SERVER")
+                discoveryController.start()
+                gattServer.start()
+                gattServer.startAdvertising(connectable = true)
             }
         } else {
             android.util.Log.e("PP_BLE", "VM: disabling server + discovery")
@@ -92,7 +103,6 @@ class DashboardViewModel(
             }
         }
     }
-
 
     fun showDeveloperPanel(show: Boolean) {
         _uiState.value = _uiState.value.copy(showDeveloperPanel = show)
