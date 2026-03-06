@@ -94,7 +94,7 @@ class PresenceDiscoveryController(
             started.set(false)
             return
         }
-        Log.e(TAG, "PP_DISCOVERY: start() -> PP_DISCOVERY START role=${BleConfig.BLE_ROLE}")
+        Log.e(TAG, "PP_DISCOVERY: start() -> PP_DISCOVERY START ")
         startAdvertising()
         startScanning()
         cleanupJob = scope.launch { pruneLoop() }
@@ -167,19 +167,27 @@ class PresenceDiscoveryController(
         if (!hasBlePermissions()) return
         val device = result.device ?: return
         val peerId = device.address ?: return
+        val scanRecord = result.scanRecord
+        val serviceUuids = scanRecord?.serviceUuids?.joinToString(",") { it.uuid.toString() } ?: "none"
+        val deviceName = try { device.name } catch (_: SecurityException) { null }
+
+        Log.e(
+            TAG,
+            "PP_DISCOVERY TARGET_MATCH addr=${device.address} name=${deviceName} rssi=${result.rssi} uuids=${serviceUuids}"
+        )
+
         val nowElapsed = SystemClock.elapsedRealtime()
+        val previousSeen = lastSeenMap[peerId]
         lastSeenMap[peerId] = nowElapsed
-        _peerEvents.tryEmit(PeerEvent(peerId, Instant.now()))
+
+        if (previousSeen == null || nowElapsed - previousSeen > 5000) {
+            Log.e(TAG, "PP_DISCOVERY PEER_SEEN addr=${device.address} rssi=${result.rssi}")
+            _peerEvents.tryEmit(PeerEvent(peerId, Instant.now()))
+        }
+
         updateMetrics(nowElapsed)
 
-        Log.e(TAG, "PP_DISCOVERY SCAN_RESULT addr=")
-        Log.e(TAG, "PP_DISCOVERY SCAN_RESULT rssi=${result.rssi} match=${isMatchingPeer(device)}")
-
-        // Minimal connect attempt
-        if ((BleConfig.BLE_ROLE == BleRole.BOTH || BleConfig.BLE_ROLE == BleRole.CLIENT_ONLY) && !isConnected) {
-            connectGatt(device)
-            Log.e(TAG, "PP_HANDSHAKE: CONNECT_START addr=${device.address}")
-        }
+        // RUN_003 scan-only: direct GATT connect disabled
     }
 
     private suspend fun pruneLoop() {
