@@ -1,5 +1,7 @@
 package com.presenceprotocol.data.ble
 
+import com.presenceprotocol.data.ble.gatt.PresenceGattServer
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
@@ -20,6 +22,7 @@ import android.os.ParcelUuid
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.presenceprotocol.data.ble.gatt.PresenceGattClient
 import com.presenceprotocol.domain.discovery.PeerDiscoveryMetrics
 import com.presenceprotocol.domain.discovery.PeerEvent
 import java.time.Instant
@@ -38,6 +41,7 @@ import kotlinx.coroutines.launch
 
 class PresenceDiscoveryController(
     private val context: Context,
+    private val presenceGattServer: PresenceGattServer,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
 
@@ -55,6 +59,8 @@ class PresenceDiscoveryController(
     val peerEvents: SharedFlow<PeerEvent> = _peerEvents.asSharedFlow()
 
     private val lastSeenMap = mutableMapOf<String, Long>()
+    private val handshakeCoordinator by lazy { PresenceHandshakeCoordinator(bluetoothAdapter) }
+    private val gattClient by lazy { PresenceGattClient(context, handshakeCoordinator) }
 
     private val started = AtomicBoolean(false)
     private var cleanupJob: Job? = null
@@ -171,23 +177,28 @@ class PresenceDiscoveryController(
         val serviceUuids = scanRecord?.serviceUuids?.joinToString(",") { it.uuid.toString() } ?: "none"
         val deviceName = try { device.name } catch (_: SecurityException) { null }
 
-        Log.e(
-            TAG,
-            "PP_DISCOVERY TARGET_MATCH addr=${device.address} name=${deviceName} rssi=${result.rssi} uuids=${serviceUuids}"
-        )
-
         val nowElapsed = SystemClock.elapsedRealtime()
         val previousSeen = lastSeenMap[peerId]
+        if (previousSeen == null || nowElapsed - previousSeen > PEER_LOG_WINDOW_MS) {
+            Log.e(
+                TAG,
+                "PP_DISCOVERY TARGET_MATCH addr=" + device.address + " name=" + deviceName + " rssi=" + result.rssi + " uuids=" + serviceUuids
+            )
+        }
         lastSeenMap[peerId] = nowElapsed
+        handshakeCoordinator.recordSeen(peerId)
 
-        if (previousSeen == null || nowElapsed - previousSeen > 5000) {
-            Log.e(TAG, "PP_DISCOVERY PEER_SEEN addr=${device.address} rssi=${result.rssi}")
+        if (previousSeen == null || nowElapsed - previousSeen > PEER_LOG_WINDOW_MS) {
+            Log.e(TAG, "PP_DISCOVERY PEER_SEEN addr=" + device.address + " rssi=" + result.rssi)
             _peerEvents.tryEmit(PeerEvent(peerId, Instant.now()))
         }
 
-        updateMetrics(nowElapsed)
+        if (handshakeCoordinator.shouldInitiate(device)) {
+            handshakeCoordinator.markConnectStart(peerId)
+            gattClient.onPeerSeen(device)
+        }
 
-        // RUN_003 scan-only: direct GATT connect disabled
+        updateMetrics(nowElapsed)
     }
 
     private suspend fun pruneLoop() {
@@ -218,6 +229,7 @@ class PresenceDiscoveryController(
     companion object {
         private const val TAG = "PresenceDiscovery"
         private const val NEARBY_WINDOW_MS = 10_000L
+        private const val PEER_LOG_WINDOW_MS = 15_000L
         private const val TEN_MINUTES_MS = 10 * 60 * 1000L
         private const val PRUNE_INTERVAL_MS = 5_000L
 
