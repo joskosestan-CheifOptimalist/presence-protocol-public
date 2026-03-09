@@ -4,18 +4,16 @@
 
 Presence Protocol is currently operating at a repo-grounded status of:
 
-PHASE 4 - SIGNED ENCOUNTER PROOF
+PHASE 4 - BILATERAL SIGNED ENCOUNTER PROOF
 
 Confirmed by repo evidence in:
 - RUN_010
+- RUN_012
+- RUN_013
 
-Supporting follow-on run present:
-- RUN_011
-
-Claw must treat Phase 4 as achieved, but must not overstate repeated stability until another explicit full-field proof run is evidenced in docs/qa_logs.
-
+Claw must treat bilateral signed EncounterTicket generation as achieved.
 Immediate development focus:
-- ticket verification hardening
+- signature verification hardening
 - relay mining loop
 - anti-replay and anti-spam constraints
 - repeated real-device validation

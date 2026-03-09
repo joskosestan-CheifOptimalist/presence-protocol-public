@@ -81,11 +81,13 @@
 ## Protocol Progression Snapshot
 
 RUN_010
-Repo-evidenced full EncounterTicket proof run with PP_TICKET JSON showing populated proof fields.
+Repo-evidenced full EncounterTicket proof run.
 
-RUN_011
-Follow-on validation run exists in docs/qa_logs.
+RUN_012
+Repeatable EncounterTicket generation confirmed, but deviceBSignature still placeholder.
+
+RUN_013
+Bilateral signed EncounterTicket generation confirmed with real deviceBSignature on both devices.
 
 Current QA Conclusion:
-Presence Protocol has achieved a repo-evidenced Phase 4 milestone (Signed Encounter Proof) through RUN_010.
-Repeat-confirmation should be strengthened before claiming stable multi-run proof.
+Presence Protocol has achieved repeatable bilateral signed EncounterTicket generation.
