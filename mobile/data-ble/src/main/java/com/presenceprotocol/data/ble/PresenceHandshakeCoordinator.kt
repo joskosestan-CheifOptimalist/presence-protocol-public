@@ -78,26 +78,31 @@ class PresenceHandshakeCoordinator(
             localEphemeralPublic = pub
         }
         Log.e(TAG, "PP_HANDSHAKE CONNECT_START peer=$peerId")
+        Log.d(TAG, "PIPE_CONNECT_START peer=$peerId stage=connect_start")
     }
 
     fun markGattConnected(peerId: String) {
         peers[peerId]?.state = HandshakeState.GATT_CONNECTED
         Log.e(TAG, "PP_HANDSHAKE GATT_CONNECTED peer=$peerId")
+        Log.d(TAG, "PIPE_GATT_CONNECTED peer=$peerId stage=gatt_connected")
     }
 
     fun markServicesDiscovered(peerId: String) {
         peers[peerId]?.state = HandshakeState.SERVICES_DISCOVERED
         Log.e(TAG, "PP_HANDSHAKE SERVICES_DISCOVERED peer=$peerId")
+        Log.d(TAG, "PIPE_SERVICES_DISCOVERED peer=$peerId stage=services_discovered")
     }
 
     fun markCharWrite(peerId: String) {
         peers[peerId]?.state = HandshakeState.CHAR_WRITE
         Log.e(TAG, "PP_HANDSHAKE CHAR_WRITE peer=$peerId")
+        Log.d(TAG, "PIPE_CHAR_WRITE peer=$peerId stage=char_write")
     }
 
     fun markNotifyReceived(peerId: String) {
         peers[peerId]?.state = HandshakeState.NOTIFY_RECEIVED
         Log.e(TAG, "PP_HANDSHAKE NOTIFY_RECEIVED peer=$peerId")
+        Log.d(TAG, "PIPE_NOTIFY_RECEIVED peer=$peerId stage=notify_received")
     }
 
     fun markComplete(peerId: String, helloHash: String = "hello_hash_placeholder", replyHash: String = "reply_hash_placeholder", appVersion: String = "dev", deviceBEphemeralKey: String = peerId, deviceBSignature: String = "device_b_sig_placeholder") {
@@ -107,6 +112,7 @@ class PresenceHandshakeCoordinator(
             lastSuccessMs = now
         }
         Log.e(TAG, "PP_HANDSHAKE HANDSHAKE_COMPLETE peer=$peerId")
+        Log.d(TAG, "PIPE_HANDSHAKE_COMPLETE peer=$peerId stage=handshake_complete")
         val currentHeartbeatId = HeartbeatClock.heartbeatId()
 
         val lastHeartbeat = lastHeartbeatSeen[peerId]
@@ -157,14 +163,17 @@ class PresenceHandshakeCoordinator(
             deviceBSignature = resolvedDeviceBSignature
         )
         Log.e(TAG, "PP_TICKET GENERATED encounterId=" + ticket.encounterId + " peer=" + peerId)
+        Log.d(TAG, "PIPE_TICKET_GENERATED peer=$peerId encounterId=${ticket.encounterId} stage=ticket_generated")
         Log.e(TAG, "PP_TICKET JSON " + ticket.toJson())
         miningLedger.recordEncounter()
+        Log.d(TAG, "PIPE_LEDGER_CREDIT peer=$peerId encounterId=${ticket.encounterId} stage=ledger_credit")
         activePeer.compareAndSet(peerId, null)
     }
 
     fun markFailure(peerId: String, reason: String) {
         peers[peerId]?.state = HandshakeState.COOLDOWN
         Log.e(TAG, "PP_HANDSHAKE FAIL peer=$peerId reason=$reason")
+        Log.d(TAG, "PIPE_FAIL peer=$peerId stage=fail reason=$reason")
         activePeer.compareAndSet(peerId, null)
     }
 
