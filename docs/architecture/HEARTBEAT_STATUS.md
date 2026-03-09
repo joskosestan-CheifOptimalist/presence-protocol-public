@@ -1,19 +1,17 @@
 # Heartbeat Status
 
 Current status:
-- Mining architecture files now contain repo-backed content.
-- Handshake reference baseline is RUN_007.
-- Current architecture recommendation is Balanced MVP+.
+- RUN_007 remains the handshake reference baseline.
+- RUN_008 verified EncounterTicket stub generation after handshake completion.
+- RUN_009 verified full EncounterTicket JSON logging after handshake completion.
+- RUN_010 verified first real-field EncounterTicket pass.
+- Next target is S23 missing chars investigation and further placeholder reduction.
 
 Files changed this heartbeat:
-- MINING_ARCH_OPTIONS.md
-- MINING_MVP_RECOMMENDATION.md
-- MINING_OPEN_QUESTIONS.md
+- ENCOUNTER_TICKET_REAL_FIELD_PLAN.md
 - MINING_DECISION_LOG.md
 - HEARTBEAT_STATUS.md
-- HEARTBEAT_ACTIONS.md
-- DRIFT_WATCH.md
 
 Drift detected:
-- Yes, prior false-complete reports without file content.
-- Current correction applied by direct repo write.
+- Yes, repo state had fallen behind verified run state.
+- Corrected by direct repo write and verification.

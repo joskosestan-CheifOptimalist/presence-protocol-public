@@ -10,6 +10,8 @@ import com.presenceprotocol.data.ble.PresenceDiscoveryController
 import com.presenceprotocol.domain.MiningLedger
 import com.presenceprotocol.domain.SyncCoordinator
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -24,6 +26,7 @@ class DashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = _uiState
 
     private var discoveryStarted = false
+    private var heartbeatJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -54,18 +57,25 @@ class DashboardViewModel(
 
     fun ensureDiscoveryStarted() {
         if (!discoveryStarted) {
+            gattServer.start(); // Start the server first
             discoveryController.start()
             discoveryStarted = true
+            startHeartbeat()
+            _uiState.value = _uiState.value.copy(isMining = true)
         }
     }
 
     fun stopDiscovery() {
+        android.util.Log.e("PP_BLE", "VM: stopDiscovery entered discoveryStarted=" + discoveryStarted)
         if (discoveryStarted) {
+            android.util.Log.e("PP_BLE", "VM: stopDiscovery -> stopping discovery + gatt server")
             discoveryController.stop()
+            gattServer.stop()
             discoveryStarted = false
-       }
+            stopHeartbeat()
+            _uiState.value = _uiState.value.copy(isMining = false)
+        }
     }
-
 
     fun toggleMining() {
         android.util.Log.e("PP_BLE", "VM: toggle handler entered")
@@ -75,26 +85,20 @@ class DashboardViewModel(
         android.util.Log.e("PP_BLE", "VM: BLE_ROLE=${BleConfig.BLE_ROLE} next=$next")
 
         if (next) {
-            // Updated conditional logic for BOTH role
             if (BleConfig.BLE_ROLE == BleRole.CLIENT_ONLY) {
-                // Only start discovery for client
                 android.util.Log.e("PP_BLE", "VM: starting DISCOVERY")
                 discoveryController.start()
             } else if (BleConfig.BLE_ROLE == BleRole.SERVER_ONLY) {
-                // Start GATT server + advertise for server
-                android.util.Log.e("PP_BLE", "VM: starting GATT SERVER")
+                android.util.Log.e("PP_BLE", "VM: starting GATT SERVER + DISCOVERY")
                 gattServer.start()
-                android.util.Log.e("PP_BLE", "VM: starting ADVERTISING")
-                gattServer.startAdvertising(connectable = true)
-            } else if (BleConfig.BLE_ROLE == BleRole.BOTH) {
-                // Start both discovery + advertising + GATT server
-                android.util.Log.e("PP_BLE", "VM: starting DISCOVERY + ADVERTISING + GATT SERVER")
                 discoveryController.start()
-                gattServer.start()
-                gattServer.startAdvertising(connectable = true)
+            } else if (BleConfig.BLE_ROLE == BleRole.BOTH) {
+                android.util.Log.e("PP_BLE", "VM: starting DISCOVERY + GATT SERVER")
+                gattServer.start(); // Ensure server starts first
+                discoveryController.start()
             }
         } else {
-            android.util.Log.e("PP_BLE", "VM: disabling server + discovery")
+            android.util.Log.e("PP_BLE", "VM: toggle OFF -> disabling server + discovery")
             discoveryController.stop()
             if (BleConfig.BLE_ROLE != BleRole.CLIENT_ONLY) {
                 gattServer.stop()
@@ -102,6 +106,27 @@ class DashboardViewModel(
                 android.util.Log.e("PP_BLE", "VM: skipping GATT SERVER stop (client-only)")
             }
         }
+    }
+
+    private fun startHeartbeat() {
+        if (heartbeatJob?.isActive == true) return
+        heartbeatJob = viewModelScope.launch {
+            while (true) {
+                val nextEpoch = _uiState.value.epoch + 1
+                _uiState.value = _uiState.value.copy(
+                    heartbeatTick = _uiState.value.heartbeatTick + 1,
+                    lastHeartbeatAt = System.currentTimeMillis(),
+                    epoch = nextEpoch,
+                    networkHealth = "Live"
+                )
+                delay(1200)
+            }
+        }
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
     }
 
     fun showDeveloperPanel(show: Boolean) {
@@ -128,5 +153,8 @@ data class DashboardUiState(
     val totalBalance: Double = 0.0,
     val networkHealth: String = "Stable",
     val showDeveloperPanel: Boolean = false,
-    val devLog: List<String> = emptyList()
+    val devLog: List<String> = emptyList(),
+    val heartbeatTick: Long = 0L,
+    val lastHeartbeatAt: Long = 0L,
+    val epoch: Int = 0
 )

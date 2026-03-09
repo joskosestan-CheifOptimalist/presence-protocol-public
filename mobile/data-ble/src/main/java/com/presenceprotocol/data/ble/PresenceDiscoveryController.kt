@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 class PresenceDiscoveryController(
     private val context: Context,
     private val presenceGattServer: PresenceGattServer,
+    private val miningLedger: com.presenceprotocol.domain.MiningLedger,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
 
@@ -59,7 +60,7 @@ class PresenceDiscoveryController(
     val peerEvents: SharedFlow<PeerEvent> = _peerEvents.asSharedFlow()
 
     private val lastSeenMap = mutableMapOf<String, Long>()
-    private val handshakeCoordinator by lazy { PresenceHandshakeCoordinator(bluetoothAdapter) }
+    private val handshakeCoordinator by lazy { PresenceHandshakeCoordinator(bluetoothAdapter, miningLedger) }
     private val gattClient by lazy { PresenceGattClient(context, handshakeCoordinator) }
 
     private val started = AtomicBoolean(false)

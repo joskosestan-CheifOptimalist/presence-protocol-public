@@ -16,7 +16,9 @@ import android.util.Log
 import com.presenceprotocol.data.ble.PresenceHandshakeCoordinator
 import com.presenceprotocol.core.common.cbor.PresenceCborPackets
 import com.presenceprotocol.core.common.handshake.HelloPacket
+import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.Base64
 import java.util.UUID
 
 class PresenceGattClient(
@@ -31,6 +33,11 @@ class PresenceGattClient(
     private var helloCharacteristic: BluetoothGattCharacteristic? = null
     private var currentAddress: String? = null
     private var pendingHelloBytes: ByteArray? = null
+    private var lastHelloHash: String? = null
+    private var lastReplyHash: String? = null
+    private var lastDeviceBEphemeralKey: String? = null
+    private var lastDeviceBSignature: String? = null
+    private var missingCharsRetryUsed: Boolean = false
     private val serviceDiscoveryTimeoutHandler = Handler(Looper.getMainLooper())
     private var serviceDiscoveryTimeout: Runnable? = null
 
@@ -86,14 +93,41 @@ class PresenceGattClient(
                 return
             }
             handshakeCoordinator.markServicesDiscovered(gatt.device.address)
+
+            gatt.services?.forEach { svc ->
+                Log.d(TAG, "DISCOVERED_SERVICE addr=${gatt.device.address} uuid=${svc.uuid}")
+                svc.characteristics?.forEach { ch ->
+                    Log.d(TAG, "DISCOVERED_CHAR addr=${gatt.device.address} service=${svc.uuid} uuid=${ch.uuid}")
+                }
+            }
+
             val service = gatt.getService(PresenceGattUuids.PRESENCE_SERVICE_UUID)
             replyCharacteristic = service?.getCharacteristic(PresenceGattUuids.REPLY_CHAR_UUID)
             helloCharacteristic = service?.getCharacteristic(PresenceGattUuids.HELLO_CHAR_UUID)
+
+            Log.d(
+                TAG,
+                "SERVICE_LOOKUP addr=${gatt.device.address} serviceFound=${service != null} " +
+                    "replyFound=${replyCharacteristic != null} helloFound=${helloCharacteristic != null}"
+            )
+
             if (replyCharacteristic == null || helloCharacteristic == null) {
+                if (!missingCharsRetryUsed) {
+                    missingCharsRetryUsed = true
+                    Log.d(TAG, "MISSING_CHARS_RETRY addr=${gatt.device.address} delayMs=250")
+                    serviceDiscoveryTimeout = Runnable {
+                        val ok = gatt.discoverServices()
+                        Log.d(TAG, "DISCOVER_SERVICES_RETRY addr=${gatt.device.address} ok=$ok")
+                    }
+                    serviceDiscoveryTimeoutHandler.postDelayed(serviceDiscoveryTimeout!!, 250)
+                    return
+                }
                 handshakeCoordinator.markFailure(gatt.device.address, "missing chars")
                 cleanup("missing chars")
                 return
             }
+
+            missingCharsRetryUsed = false
             enableNotifications(gatt)
         }
 
@@ -132,8 +166,28 @@ class PresenceGattClient(
         ) {
             if (characteristic.uuid == PresenceGattUuids.REPLY_CHAR_UUID) {
                 Log.d(TAG, "REPLY_RX addr=${gatt.device.address} bytes=${value.size}")
+
+                val replyText = String(value, Charsets.UTF_8)
+                val parsed = parseReplyEnvelope(replyText)
+
+                val replyBytes = parsed["reply"]?.let {
+                    try { Base64.getDecoder().decode(it) } catch (_: Throwable) { value }
+                } ?: value
+
+                lastDeviceBEphemeralKey = parsed["deviceBEphemeralKey"]
+                lastDeviceBSignature = parsed["deviceBSignature"]
+                lastReplyHash = sha256Hex(replyBytes)
+
+                val appVersion = getAppVersion()
                 handshakeCoordinator.markNotifyReceived(gatt.device.address)
-                handshakeCoordinator.markComplete(gatt.device.address)
+                handshakeCoordinator.markComplete(
+                    gatt.device.address,
+                    helloHash = lastHelloHash ?: "hello_hash_missing",
+                    replyHash = lastReplyHash ?: "reply_hash_missing",
+                    appVersion = appVersion,
+                    deviceBEphemeralKey = lastDeviceBEphemeralKey ?: gatt.device.address,
+                    deviceBSignature = lastDeviceBSignature ?: "device_b_sig_missing"
+                )
                 cleanup("reply received")
             }
         }
@@ -156,6 +210,7 @@ class PresenceGattClient(
         val characteristic = helloCharacteristic ?: return
         val payload = byteArrayOf(0x50, 0x50, 0x48, 0x31)
         pendingHelloBytes = payload
+        lastHelloHash = sha256Hex(payload)
         characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
         characteristic.value = payload
         gatt.writeCharacteristic(characteristic)
@@ -171,7 +226,35 @@ class PresenceGattClient(
         replyCharacteristic = null
         helloCharacteristic = null
         pendingHelloBytes = null
+        lastHelloHash = null
+        lastReplyHash = null
+        lastDeviceBEphemeralKey = null
+        lastDeviceBSignature = null
+        missingCharsRetryUsed = false
         currentAddress = null
+    }
+
+    private fun parseReplyEnvelope(text: String): Map<String, String> {
+        return text.split(";")
+            .mapNotNull {
+                val idx = it.indexOf("=")
+                if (idx <= 0) null else it.substring(0, idx) to it.substring(idx + 1)
+            }
+            .toMap()
+    }
+
+    private fun getAppVersion(): String {
+        return try {
+            val pkg = context.packageManager.getPackageInfo(context.packageName, 0)
+            pkg.versionName ?: "unknown"
+        } catch (_: Throwable) {
+            "unknown"
+        }
+    }
+
+    private fun sha256Hex(bytes: ByteArray): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
+        return digest.joinToString("") { "%02x".format(it) }
     }
 
     companion object {
