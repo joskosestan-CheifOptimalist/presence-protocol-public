@@ -37,6 +37,10 @@ class DashboardViewModel(
                     todayYield = stats.yieldToday,
                     totalBalance = stats.total
                 )
+                android.util.Log.d(
+                    "PP_UI",
+                    "PIPE_UI_REFRESH verifiedToday=${stats.verifiedToday} pending=${stats.pending} yieldToday=${stats.yieldToday} total=${stats.total}"
+                )
             }
         }
         viewModelScope.launch {
