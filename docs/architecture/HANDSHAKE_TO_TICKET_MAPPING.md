@@ -42,3 +42,24 @@ Notes
 - ticket must only be created after PP_HANDSHAKE HANDSHAKE_COMPLETE
 - discovery-only or partial GATT events must never create a ticket
 - RUN_007 remains the reference handshake path for this mapping
+
+## Signature Verification Status (Alpha)
+
+Current implementation performs **local self-consistency verification only**.
+
+Specifically:
+- `deviceASignature` is verified against the local ephemeral public key.
+- `deviceBSignature` is also verified using the same local key.
+
+This currently gives:
+- deterministic local verification
+- ticket generation continuity
+- replay/suppression-friendly consistency during alpha testing
+
+This is **not yet true bilateral cryptographic verification** between peers.
+
+True bilateral verification will require:
+1. exchange of peer ephemeral public keys
+2. verification of `deviceBSignature` against the peer public key
+3. challenge/response binding so signatures are tied to the actual counterparty
+4. protocol evidence proving the peer key used for verification was received over the handshake path
