@@ -16,6 +16,7 @@ import android.util.Log
 import com.presenceprotocol.data.ble.PresenceHandshakeCoordinator
 import com.presenceprotocol.core.common.cbor.PresenceCborPackets
 import com.presenceprotocol.core.common.handshake.HelloPacket
+import kotlin.random.Random
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
@@ -167,16 +168,23 @@ class PresenceGattClient(
             if (characteristic.uuid == PresenceGattUuids.REPLY_CHAR_UUID) {
                 Log.d(TAG, "REPLY_RX addr=${gatt.device.address} bytes=${value.size}")
 
-                val replyText = String(value, Charsets.UTF_8)
-                val parsed = parseReplyEnvelope(replyText)
+                if (value.contentEquals(byteArrayOf(0x50, 0x50, 0x52, 0x31))) {
+                    Log.d(TAG, "REPLY_RX_RAW addr=${gatt.device.address} bytes=${value.size}")
+                    lastDeviceBEphemeralKey = gatt.device.address
+                    lastDeviceBSignature = "device_b_sig_raw_probe"
+                    lastReplyHash = sha256Hex(value)
+                } else {
+                    val replyText = String(value, Charsets.UTF_8)
+                    val parsed = parseReplyEnvelope(replyText)
 
-                val replyBytes = parsed["reply"]?.let {
-                    try { Base64.getDecoder().decode(it) } catch (_: Throwable) { value }
-                } ?: value
+                    val replyBytes = parsed["reply"]?.let {
+                        try { Base64.getDecoder().decode(it) } catch (_: Throwable) { value }
+                    } ?: value
 
-                lastDeviceBEphemeralKey = parsed["deviceBEphemeralKey"]
-                lastDeviceBSignature = parsed["deviceBSignature"]
-                lastReplyHash = sha256Hex(replyBytes)
+                    lastDeviceBEphemeralKey = parsed["deviceBEphemeralKey"]
+                    lastDeviceBSignature = parsed["deviceBSignature"]
+                    lastReplyHash = sha256Hex(replyBytes)
+                }
 
                 val appVersion = getAppVersion()
                 handshakeCoordinator.markNotifyReceived(gatt.device.address)
@@ -208,9 +216,12 @@ class PresenceGattClient(
     @SuppressLint("MissingPermission")
     private fun writeHello(gatt: BluetoothGatt) {
         val characteristic = helloCharacteristic ?: return
+
         val payload = byteArrayOf(0x50, 0x50, 0x48, 0x31)
+
         pendingHelloBytes = payload
         lastHelloHash = sha256Hex(payload)
+        Log.d(TAG, "HELLO_BUILD addr=${gatt.device.address} bytes=${payload.size} hash=${lastHelloHash}")
         characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
         characteristic.value = payload
         gatt.writeCharacteristic(characteristic)

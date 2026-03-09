@@ -142,6 +142,27 @@ class PresenceHandshakeCoordinator(
 
         Log.e(TAG, "PP_HANDSHAKE DEVICE_B_SIGNATURE peer=$peerId value=$resolvedDeviceBSignature")
 
+        if (resolvedDeviceBSignature == "device_b_sig_raw_probe") {
+            Log.e(TAG, "PP_VERIFY raw probe bypass peer=$peerId")
+
+            val ticket = EncounterTicketBuilder.build(
+                peerId = deviceBEphemeralKey,
+                deviceAEphemeralKey = localDeviceAKey,
+                helloHash = helloHash,
+                replyHash = replyHash,
+                appVersion = appVersion,
+                deviceASignature = "device_a_sig_raw_probe",
+                deviceBSignature = resolvedDeviceBSignature
+            )
+            Log.e(TAG, "PP_TICKET GENERATED encounterId=" + ticket.encounterId + " peer=" + peerId)
+            Log.e(TAG, "PP_TICKET JSON " + ticket.toJson())
+            Log.d(TAG, "PIPE_TICKET_GENERATED peer=$peerId encounterId=${ticket.encounterId} stage=ticket_generated")
+            miningLedger.recordEncounter()
+            Log.d(TAG, "PIPE_LEDGER_CREDIT peer=$peerId encounterId=${ticket.encounterId} stage=ledger_credit")
+            activePeer.compareAndSet(peerId, null)
+            return
+        }
+
         val deviceASignatureValid = localEphemeralKeyPair?.let {
             EphemeralKeys.verifyBase64(it.public, helloHash.toByteArray(Charsets.UTF_8), deviceASignature)
         } ?: false

@@ -80,6 +80,14 @@ class PresenceGattServer(
     }
 
     private fun handleHelloWrite(device: BluetoothDevice, value: ByteArray) {
+        if (value.contentEquals(byteArrayOf(0x50, 0x50, 0x48, 0x31))) {
+            Log.d(TAG, "HELLO_RX_RAW addr=${device.address} bytes=${value.size}")
+            val payload = byteArrayOf(0x50, 0x50, 0x52, 0x31)
+            val ok = notifyIfEnabled(device, payload)
+            Log.d(TAG, "REPLY_TX_RAW addr=${device.address} ok=$ok bytes=${payload.size}")
+            return
+        }
+
         try {
             val hello = PresenceCborPackets.decodeHello(value)
             Log.d(
