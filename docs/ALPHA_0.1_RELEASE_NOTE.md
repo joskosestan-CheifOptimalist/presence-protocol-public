@@ -66,3 +66,23 @@ Latest live validation:
 - both devices generated tickets
 - both devices credited ledger
 - both devices refreshed UI totals
+
+## Alpha 0.2 CBOR recovery proof
+
+Structured CBOR transport has now been restored live across two Android devices.
+
+Verified live:
+- client requests MTU 185
+- negotiated MTU reaches 517
+- server receives full CBOR hello payload (`bytes=29`)
+- server decodes HELLO successfully
+- server sends CBOR reply successfully
+- client receives reply successfully
+- signature verification returns true for both device A and device B
+- encounter ticket is generated
+- mining ledger is credited
+- dashboard UI refresh reflects updated totals
+
+Key fix:
+- CBOR transport was being truncated at default ATT payload size
+- MTU negotiation plus no-response write mode for CBOR resolved the truncation path
