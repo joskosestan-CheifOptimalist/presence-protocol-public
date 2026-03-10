@@ -2,6 +2,7 @@ package com.presenceprotocol.data.ble
 
 import android.bluetooth.BluetoothAdapter
 import com.presenceprotocol.core.crypto.EphemeralKeys
+import com.presenceprotocol.core.common.config.TransportConfig
 import android.bluetooth.BluetoothDevice
 import android.os.SystemClock
 import android.util.Log
@@ -44,7 +45,6 @@ class PresenceHandshakeCoordinator(
         private const val TAG = "PresenceHandshake"
         private const val HANDSHAKE_COOLDOWN_MS = 30_000L
         private const val SUCCESS_COOLDOWN_MS = 120_000L
-        private const val LEDGER_CREDIT_COOLDOWN_MS = 300_000L
     }
 
     fun recordSeen(peerId: String) {
@@ -126,8 +126,8 @@ class PresenceHandshakeCoordinator(
         lastHeartbeatSeen[peerId] = currentHeartbeatId
 
         val lastCreditMs = lastLedgerCreditMs[peerId]
-        if (lastCreditMs != null && now - lastCreditMs < LEDGER_CREDIT_COOLDOWN_MS) {
-            Log.e(TAG, "PP_SUPPRESS cooldown peer=$peerId cooldownMs=" + (LEDGER_CREDIT_COOLDOWN_MS - (now - lastCreditMs)))
+        if (lastCreditMs != null && now - lastCreditMs < TransportConfig.LEDGER_CREDIT_COOLDOWN_MS) {
+            Log.e(TAG, "PP_SUPPRESS cooldown peer=$peerId cooldownMs=" + (TransportConfig.LEDGER_CREDIT_COOLDOWN_MS - (now - lastCreditMs)))
             activePeer.compareAndSet(peerId, null)
             return
         }
