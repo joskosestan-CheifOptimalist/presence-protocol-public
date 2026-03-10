@@ -62,6 +62,12 @@ class PresenceHandshakeCoordinator(
 
         val currentActive = activePeer.get()
         if (currentActive != null && currentActive != peerId) return false
+
+        val lastCreditMs = lastLedgerCreditMs[peerId]
+        if (lastCreditMs != null && now - lastCreditMs < TransportConfig.LEDGER_CREDIT_COOLDOWN_MS) {
+            return false
+        }
+
         if (now - info.lastSuccessMs < SUCCESS_COOLDOWN_MS) return false
         if (now - info.lastAttemptMs < HANDSHAKE_COOLDOWN_MS) return false
         if (!localShouldInitiate(peerId)) return false
