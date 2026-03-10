@@ -53,3 +53,16 @@ Interpretation:
 - RUN_014 is the strongest archived structured verification evidence
 - Alpha 0.2 raw probe is the strongest current live end-to-end spine proof
 - final goal remains restoring structured transport with true bilateral verification
+
+## Shared transport mode switch
+
+A shared transport switch now exists in `core-common`:
+
+- `RAW_PROBE` = strongest live proof path
+- `CBOR_PROBE` = structured transport recovery path
+
+Latest live validation:
+- both devices completed raw probe transport
+- both devices generated tickets
+- both devices credited ledger
+- both devices refreshed UI totals
