@@ -15,8 +15,9 @@ import android.os.SystemClock
 import android.util.Log
 import com.presenceprotocol.data.ble.PresenceHandshakeCoordinator
 import com.presenceprotocol.core.common.cbor.PresenceCborPackets
+import com.presenceprotocol.core.common.config.TransportConfig
+import com.presenceprotocol.core.common.config.TransportMode
 import com.presenceprotocol.core.common.handshake.HelloPacket
-import kotlin.random.Random
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
@@ -217,11 +218,23 @@ class PresenceGattClient(
     private fun writeHello(gatt: BluetoothGatt) {
         val characteristic = helloCharacteristic ?: return
 
-        val payload = byteArrayOf(0x50, 0x50, 0x48, 0x31)
+        val payload = when (TransportConfig.transportMode) {
+            TransportMode.RAW_PROBE -> byteArrayOf(0x50, 0x50, 0x48, 0x31)
+            TransportMode.CBOR_PROBE -> {
+                val hello = HelloPacket(
+                    version = 1,
+                    sessionId = ByteArray(16).also { secureRandom.nextBytes(it) },
+                    nonce = ByteArray(12).also { secureRandom.nextBytes(it) },
+                    clientPublicKey = ByteArray(32),
+                    timestampSeconds = System.currentTimeMillis() / 1000L
+                )
+                PresenceCborPackets.encodeHello(hello)
+            }
+        }
 
         pendingHelloBytes = payload
         lastHelloHash = sha256Hex(payload)
-        Log.d(TAG, "HELLO_BUILD addr=${gatt.device.address} bytes=${payload.size} hash=${lastHelloHash}")
+        Log.d(TAG, "HELLO_BUILD addr=${gatt.device.address} mode=${TransportConfig.transportMode} bytes=${payload.size} hash=${lastHelloHash}")
         characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
         characteristic.value = payload
         gatt.writeCharacteristic(characteristic)
