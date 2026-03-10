@@ -27,6 +27,7 @@ class PresenceGattServer(
     private var serverStarted: Boolean = false
     private var replyCharacteristic: BluetoothGattCharacteristic? = null
     private val notifyEnabled = mutableSetOf<String>()
+    private val preparedHelloWrites = mutableMapOf<String, MutableList<ByteArray>>()
 
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(BluetoothManager::class.java)
@@ -46,13 +47,37 @@ class PresenceGattServer(
             value: ByteArray
         ) {
             if (characteristic.uuid == PresenceGattUuids.HELLO_CHAR_UUID) {
-                handleHelloWrite(device, value)
+                Log.d(
+                    TAG,
+                    "HELLO_WRITE_REQ addr=${device.address} prepared=$preparedWrite responseNeeded=$responseNeeded offset=$offset bytes=${value.size}"
+                )
+                if (preparedWrite) {
+                    preparedHelloWrites.getOrPut(device.address) { mutableListOf() }.add(value.copyOf())
+                } else {
+                    handleHelloWrite(device, value)
+                }
             } else {
                 Log.d(TAG, "onWrite char=${characteristic.uuid} from=${device.address} bytes=${value.size}")
             }
             if (responseNeeded) {
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, byteArrayOf())
             }
+        }
+
+        override fun onExecuteWrite(device: BluetoothDevice, requestId: Int, execute: Boolean) {
+            val chunks = preparedHelloWrites.remove(device.address).orEmpty()
+            val payload = chunks.fold(ByteArray(0)) { acc, part -> acc + part }
+
+            Log.d(
+                TAG,
+                "HELLO_EXECUTE addr=${device.address} execute=$execute chunks=${chunks.size} bytes=${payload.size}"
+            )
+
+            if (execute && payload.isNotEmpty()) {
+                handleHelloWrite(device, payload)
+            }
+
+            gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, byteArrayOf())
         }
 
         override fun onDescriptorWriteRequest(
@@ -113,7 +138,11 @@ class PresenceGattServer(
                     val ok = notifyIfEnabled(device, payload)
                     Log.d(TAG, "REPLY_TX addr=${device.address} ok=$ok bytes=${payload.size}")
                 } catch (t: Throwable) {
-                    Log.w(TAG, "HELLO_RX decode failed from=${device.address} err=${t.message}")
+                    Log.w(
+                        TAG,
+                        "HELLO_RX decode failed from=${device.address} err=${t.message} bytes=${value.size} hex=" +
+                            value.joinToString("") { "%02x".format(it) }
+                    )
                 }
             }
         }

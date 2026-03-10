@@ -40,6 +40,7 @@ class PresenceGattClient(
     private var lastDeviceBEphemeralKey: String? = null
     private var lastDeviceBSignature: String? = null
     private var missingCharsRetryUsed: Boolean = false
+    private var mtuRequested: Boolean = false
     private val serviceDiscoveryTimeoutHandler = Handler(Looper.getMainLooper())
     private var serviceDiscoveryTimeout: Runnable? = null
 
@@ -73,7 +74,10 @@ class PresenceGattClient(
                 return
             }
             handshakeCoordinator.markGattConnected(gatt.device.address)
-            run {
+            mtuRequested = true
+            val mtuOk = gatt.requestMtu(185)
+            Log.d(TAG, "REQUEST_MTU addr=${gatt.device.address} ok=$mtuOk requested=185")
+            if (!mtuOk) {
                 val ok = gatt.discoverServices()
                 Log.d(TAG, "DISCOVER_SERVICES_REQUEST addr=" + gatt.device.address + " ok=" + ok)
                 serviceDiscoveryTimeout?.let { serviceDiscoveryTimeoutHandler.removeCallbacks(it) }
@@ -84,6 +88,19 @@ class PresenceGattClient(
                 }
                 serviceDiscoveryTimeoutHandler.postDelayed(serviceDiscoveryTimeout!!, 5000)
             }
+        }
+
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            Log.d(TAG, "MTU_CHANGED addr=${gatt.device.address} mtu=$mtu status=$status")
+            val ok = gatt.discoverServices()
+            Log.d(TAG, "DISCOVER_SERVICES_AFTER_MTU addr=${gatt.device.address} ok=$ok")
+            serviceDiscoveryTimeout?.let { serviceDiscoveryTimeoutHandler.removeCallbacks(it) }
+            serviceDiscoveryTimeout = Runnable {
+                Log.d(TAG, "SERVICE_DISCOVERY_TIMEOUT addr=" + gatt.device.address)
+                handshakeCoordinator.markFailure(gatt.device.address, "service discovery timeout")
+                cleanup("service discovery timeout")
+            }
+            serviceDiscoveryTimeoutHandler.postDelayed(serviceDiscoveryTimeout!!, 5000)
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
@@ -223,10 +240,10 @@ class PresenceGattClient(
             TransportMode.CBOR_PROBE -> {
                 val hello = HelloPacket(
                     version = 1,
-                    sessionId = ByteArray(16).also { secureRandom.nextBytes(it) },
-                    nonce = ByteArray(12).also { secureRandom.nextBytes(it) },
-                    clientPublicKey = ByteArray(32),
-                    timestampSeconds = System.currentTimeMillis() / 1000L
+                    sessionId = ByteArray(1).also { secureRandom.nextBytes(it) },
+                    nonce = ByteArray(1).also { secureRandom.nextBytes(it) },
+                    clientPublicKey = ByteArray(1),
+                    timestampSeconds = 1L
                 )
                 PresenceCborPackets.encodeHello(hello)
             }
@@ -235,8 +252,12 @@ class PresenceGattClient(
         pendingHelloBytes = payload
         lastHelloHash = sha256Hex(payload)
         Log.d(TAG, "HELLO_BUILD addr=${gatt.device.address} mode=${TransportConfig.transportMode} bytes=${payload.size} hash=${lastHelloHash}")
-        characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        characteristic.writeType = when (TransportConfig.transportMode) {
+            TransportMode.RAW_PROBE -> BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            TransportMode.CBOR_PROBE -> BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+        }
         characteristic.value = payload
+        Log.d(TAG, "HELLO_WRITE_REQUEST addr=${gatt.device.address} writeType=${characteristic.writeType} bytes=${payload.size}")
         gatt.writeCharacteristic(characteristic)
     }
 
@@ -255,6 +276,7 @@ class PresenceGattClient(
         lastDeviceBEphemeralKey = null
         lastDeviceBSignature = null
         missingCharsRetryUsed = false
+        mtuRequested = false
         currentAddress = null
     }
 
