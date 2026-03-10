@@ -80,6 +80,7 @@ class PresenceHandshakeCoordinator(
             localEphemeralPublic = pub
         }
         Log.e(TAG, "PP_HANDSHAKE CONNECT_START peer=$peerId")
+        Log.e(TAG, "PP_CONFIG transportMode=${TransportConfig.transportMode} ledgerCreditCooldownMs=${TransportConfig.LEDGER_CREDIT_COOLDOWN_MS}")
         Log.d(TAG, "PIPE_CONNECT_START peer=$peerId stage=connect_start")
     }
 
