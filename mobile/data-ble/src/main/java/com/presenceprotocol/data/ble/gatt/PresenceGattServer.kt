@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattServerCallback
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import com.presenceprotocol.core.common.cbor.PresenceCborPackets
 import com.presenceprotocol.core.common.config.TransportConfig
@@ -31,6 +32,7 @@ class PresenceGattServer(
 
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(BluetoothManager::class.java)
+    private val prefs: SharedPreferences = context.getSharedPreferences("presence_protocol", Context.MODE_PRIVATE)
 
     private val callback = object : BluetoothGattServerCallback() {
         override fun onConnectionStateChange(device: BluetoothDevice, status: Int, newState: Int) {
@@ -119,7 +121,9 @@ class PresenceGattServer(
                 nonce = hello.nonce,
                 serverPublicKey = ByteArray(32),
                 signature = ByteArray(64),
-                statusCode = 0
+                statusCode = 0,
+                appId = "presence-protocol",
+                appInstanceId = getAppInstanceId()
             )
             val payload = PresenceCborPackets.encodeReply(reply)
             val ok = notifyIfEnabled(device, payload)
@@ -199,6 +203,14 @@ class PresenceGattServer(
         serverStarted = true
         Log.d(TAG, "Presence GATT server started")
         return true
+    }
+
+    private fun getAppInstanceId(): String {
+        val existing = prefs.getString("app_instance_id", null)
+        if (existing != null) return existing
+        val created = UUID.randomUUID().toString()
+        prefs.edit().putString("app_instance_id", created).apply()
+        return created
     }
 
     @SuppressLint("MissingPermission")

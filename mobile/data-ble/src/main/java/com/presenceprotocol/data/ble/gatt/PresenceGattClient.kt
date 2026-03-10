@@ -39,6 +39,7 @@ class PresenceGattClient(
     private var lastReplyHash: String? = null
     private var lastDeviceBEphemeralKey: String? = null
     private var lastDeviceBSignature: String? = null
+    private var lastRemoteAppInstanceId: String? = null
     private var missingCharsRetryUsed: Boolean = false
     private var mtuRequested: Boolean = false
     private val serviceDiscoveryTimeoutHandler = Handler(Looper.getMainLooper())
@@ -192,26 +193,41 @@ class PresenceGattClient(
                     lastDeviceBSignature = "device_b_sig_placeholder"
                     lastReplyHash = sha256Hex(value)
                 } else {
-                    val replyText = String(value, Charsets.UTF_8)
-                    val parsed = parseReplyEnvelope(replyText)
+                    val reply = try {
+                        PresenceCborPackets.decodeReply(value)
+                    } catch (t: Throwable) {
+                        Log.w(TAG, "REPLY_RX decode failed addr=${gatt.device.address} err=${t.message}")
+                        cleanup("reply decode failed")
+                        return
+                    }
 
-                    val replyBytes = parsed["reply"]?.let {
-                        try { Base64.getDecoder().decode(it) } catch (_: Throwable) { value }
-                    } ?: value
+                    if (reply.appId != "presence-protocol") {
+                        Log.e(TAG, "PP_SUPPRESS app_id peer=${gatt.device.address} appId=${reply.appId}")
+                        cleanup("reply app id mismatch")
+                        return
+                    }
 
-                    lastDeviceBEphemeralKey = parsed["deviceBEphemeralKey"]
-                    lastDeviceBSignature = parsed["deviceBSignature"]
-                    lastReplyHash = sha256Hex(replyBytes)
+                    if (reply.appInstanceId.isBlank()) {
+                        Log.e(TAG, "PP_SUPPRESS app_instance_id peer=${gatt.device.address} missing=true")
+                        cleanup("reply app instance id missing")
+                        return
+                    }
+
+                    lastRemoteAppInstanceId = reply.appInstanceId
+                    lastDeviceBEphemeralKey = reply.appInstanceId
+                    lastDeviceBSignature = "device_b_sig_placeholder"
+                    lastReplyHash = sha256Hex(value)
                 }
 
                 val appVersion = getAppVersion()
-                handshakeCoordinator.markNotifyReceived(gatt.device.address)
+                val stablePeerId = lastRemoteAppInstanceId ?: lastDeviceBEphemeralKey ?: gatt.device.address
+                handshakeCoordinator.markNotifyReceived(stablePeerId)
                 handshakeCoordinator.markComplete(
-                    gatt.device.address,
+                    stablePeerId,
                     helloHash = lastHelloHash ?: "hello_hash_missing",
                     replyHash = lastReplyHash ?: "reply_hash_missing",
                     appVersion = appVersion,
-                    deviceBEphemeralKey = lastDeviceBEphemeralKey ?: gatt.device.address,
+                    deviceBEphemeralKey = stablePeerId,
                     deviceBSignature = lastDeviceBSignature ?: "device_b_sig_missing"
                 )
                 cleanup("reply received")
@@ -269,6 +285,7 @@ class PresenceGattClient(
         lastReplyHash = null
         lastDeviceBEphemeralKey = null
         lastDeviceBSignature = null
+        lastRemoteAppInstanceId = null
         missingCharsRetryUsed = false
         mtuRequested = false
         currentAddress = null

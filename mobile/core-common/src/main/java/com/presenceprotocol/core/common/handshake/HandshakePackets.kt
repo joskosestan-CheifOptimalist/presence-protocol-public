@@ -14,5 +14,7 @@ data class ReplyPacket(
     val nonce: ByteArray,
     val serverPublicKey: ByteArray,
     val signature: ByteArray,
-    val statusCode: Int
+    val statusCode: Int,
+    val appId: String,
+    val appInstanceId: String
 )

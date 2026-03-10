@@ -35,7 +35,9 @@ object PresenceCborPackets {
             nonce = map.getField(KEY_NONCE).asByteString(),
             serverPublicKey = map.getField(KEY_SERVER_PK).asByteString(),
             signature = map.getField(KEY_SIGNATURE).asByteString(),
-            statusCode = map.getField(KEY_STATUS).AsInt32()
+            statusCode = map.getField(KEY_STATUS).AsInt32(),
+            appId = map.getField(KEY_APP_ID).AsString(),
+            appInstanceId = map.getField(KEY_APP_INSTANCE_ID).AsString()
         )
     }
 
@@ -47,6 +49,8 @@ object PresenceCborPackets {
             putKey(KEY_SERVER_PK, CBORObject.FromObject(packet.serverPublicKey))
             putKey(KEY_SIGNATURE, CBORObject.FromObject(packet.signature))
             putKey(KEY_STATUS, CBORObject.FromObject(packet.statusCode))
+            putKey(KEY_APP_ID, CBORObject.FromObject(packet.appId))
+            putKey(KEY_APP_INSTANCE_ID, CBORObject.FromObject(packet.appInstanceId))
         }
         return obj.EncodeToBytes()
     }
@@ -68,4 +72,6 @@ object PresenceCborPackets {
     private const val KEY_SIGNATURE = "sig"
     private const val KEY_STATUS = "code"
     private const val KEY_TIMESTAMP = "ts"
+    private const val KEY_APP_ID = "app"
+    private const val KEY_APP_INSTANCE_ID = "app_i"
 }
