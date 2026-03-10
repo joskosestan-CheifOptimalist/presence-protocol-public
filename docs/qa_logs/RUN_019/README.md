@@ -24,3 +24,4 @@ Observed pattern:
 
 Conclusion:
 - duplicate encounter prevention is now stable enough for alpha soak conditions without breaking live CBOR proof
+- Follow-up hardening: ledger duplicate-credit cooldown was centralized into TransportConfig via commit d3d5e54, with no regression in live proof.
