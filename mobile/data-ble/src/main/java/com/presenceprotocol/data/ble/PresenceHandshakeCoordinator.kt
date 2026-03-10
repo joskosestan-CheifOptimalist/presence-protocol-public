@@ -116,25 +116,26 @@ class PresenceHandshakeCoordinator(
 
     fun markComplete(peerId: String, helloHash: String = "hello_hash_placeholder", replyHash: String = "reply_hash_placeholder", appVersion: String = "dev", deviceBEphemeralKey: String = peerId, deviceBSignature: String = "device_b_sig_placeholder") {
         val now = SystemClock.elapsedRealtime()
+        val rewardPeerId = deviceBEphemeralKey
         peers[peerId]?.apply {
             state = HandshakeState.HANDSHAKE_COMPLETE
         }
-        Log.e(TAG, "PP_HANDSHAKE HANDSHAKE_COMPLETE peer=$peerId")
+        Log.e(TAG, "PP_HANDSHAKE HANDSHAKE_COMPLETE peer=$peerId rewardPeer=$rewardPeerId")
         Log.d(TAG, "PIPE_HANDSHAKE_COMPLETE peer=$peerId stage=handshake_complete")
         val currentHeartbeatId = HeartbeatClock.heartbeatId()
 
-        val lastHeartbeat = lastHeartbeatSeen[peerId]
+        val lastHeartbeat = lastHeartbeatSeen[rewardPeerId]
         if (lastHeartbeat != null && lastHeartbeat == currentHeartbeatId) {
-            Log.e(TAG, "PP_SUPPRESS duplicate peer=$peerId heartbeatId=$currentHeartbeatId")
+            Log.e(TAG, "PP_SUPPRESS duplicate peer=$rewardPeerId heartbeatId=$currentHeartbeatId")
             activePeer.compareAndSet(peerId, null)
             return
         }
 
-        lastHeartbeatSeen[peerId] = currentHeartbeatId
+        lastHeartbeatSeen[rewardPeerId] = currentHeartbeatId
 
-        val lastCreditMs = lastLedgerCreditMs[peerId]
+        val lastCreditMs = lastLedgerCreditMs[rewardPeerId]
         if (lastCreditMs != null && now - lastCreditMs < TransportConfig.LEDGER_CREDIT_COOLDOWN_MS) {
-            Log.e(TAG, "PP_SUPPRESS cooldown peer=$peerId cooldownMs=" + (TransportConfig.LEDGER_CREDIT_COOLDOWN_MS - (now - lastCreditMs)))
+            Log.e(TAG, "PP_SUPPRESS cooldown peer=$rewardPeerId cooldownMs=" + (TransportConfig.LEDGER_CREDIT_COOLDOWN_MS - (now - lastCreditMs)))
             activePeer.compareAndSet(peerId, null)
             return
         }
@@ -169,7 +170,7 @@ class PresenceHandshakeCoordinator(
         Log.e(TAG, "PP_VERIFY deviceBSignatureValid=$deviceBSignatureValid peer=$peerId")
 
         val ticket = EncounterTicketBuilder.build(
-            peerId = deviceBEphemeralKey,
+            peerId = rewardPeerId,
             deviceAEphemeralKey = localDeviceAKey,
             helloHash = helloHash,
             replyHash = replyHash,
@@ -177,13 +178,13 @@ class PresenceHandshakeCoordinator(
             deviceASignature = deviceASignature,
             deviceBSignature = resolvedDeviceBSignature
         )
-        Log.e(TAG, "PP_TICKET GENERATED encounterId=" + ticket.encounterId + " peer=" + peerId)
-        Log.d(TAG, "PIPE_TICKET_GENERATED peer=$peerId encounterId=${ticket.encounterId} stage=ticket_generated")
+        Log.e(TAG, "PP_TICKET GENERATED encounterId=" + ticket.encounterId + " peer=" + rewardPeerId)
+        Log.d(TAG, "PIPE_TICKET_GENERATED peer=$rewardPeerId encounterId=${ticket.encounterId} stage=ticket_generated")
         Log.e(TAG, "PP_TICKET JSON " + ticket.toJson())
         miningLedger.recordEncounter()
-        lastLedgerCreditMs[peerId] = now
+        lastLedgerCreditMs[rewardPeerId] = now
         peers[peerId]?.lastSuccessMs = now
-        Log.d(TAG, "PIPE_LEDGER_CREDIT peer=$peerId encounterId=${ticket.encounterId} stage=ledger_credit")
+        Log.d(TAG, "PIPE_LEDGER_CREDIT peer=$rewardPeerId encounterId=${ticket.encounterId} stage=ledger_credit")
         activePeer.compareAndSet(peerId, null)
     }
 

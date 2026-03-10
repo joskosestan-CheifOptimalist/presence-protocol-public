@@ -220,10 +220,11 @@ class PresenceGattClient(
                 }
 
                 val appVersion = getAppVersion()
-                val stablePeerId = lastRemoteAppInstanceId ?: lastDeviceBEphemeralKey ?: gatt.device.address
-                handshakeCoordinator.markNotifyReceived(stablePeerId)
+                val transportPeerId = gatt.device.address
+                val stablePeerId = lastRemoteAppInstanceId ?: lastDeviceBEphemeralKey ?: transportPeerId
+                handshakeCoordinator.markNotifyReceived(transportPeerId)
                 handshakeCoordinator.markComplete(
-                    stablePeerId,
+                    transportPeerId,
                     helloHash = lastHelloHash ?: "hello_hash_missing",
                     replyHash = lastReplyHash ?: "reply_hash_missing",
                     appVersion = appVersion,
