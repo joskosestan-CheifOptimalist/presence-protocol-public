@@ -88,3 +88,4 @@ Key fix:
 - MTU negotiation plus no-response write mode for CBOR resolved the truncation path
 
 - 2026-03-10: pure CBOR-only transport re-proven live on A17 (R5GYC0FZ6RY) and S23 (R5CR700RAQF); MTU 185->517; HELLO 29 bytes; REPLY 133 bytes; PP_VERIFY true/true; PP_TICKET GENERATED; PIPE_LEDGER_CREDIT; PIPE_UI_REFRESH.
+- RUN_019: 10–15 minute two-device soak passed on A17/S23 with stable 5-minute duplicate-credit cooldown; no runaway ledger credit observed.

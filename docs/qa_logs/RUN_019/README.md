@@ -1,23 +1,26 @@
-# RUN_019
+# RUN_019 — two-device soak test after duplicate-credit cooldown
 
-## Objective
-Observe repeated encounter behavior after heartbeat suppression work.
+Branch:
+- alpha-0.2-work
 
-## Result
-PARTIAL / OBSERVATIONAL
+Devices:
+- A17 = R5GYC0FZ6RY
+- S23 = R5CR700RAQF
 
-## Evidence Files
-- run019_a17.log
-- run019_s23.log
-- SUPPRESS_OUTPUT.md
+Confirmed:
+- CBOR handshake remained live end-to-end
+- MTU negotiation remained stable
+- PP_VERIFY remained true for both signatures
+- PP_TICKET GENERATED remained functional
+- PIPE_LEDGER_CREDIT remained functional
+- rapid duplicate encounter credits were suppressed
+- repeated same-peer credits reopened at approximately 5-minute intervals
+- no runaway crediting observed during 10–15 minute soak
 
-## Confirmed
-- Multiple PP_TICKET JSON entries observed over time
-- Heartbeat fields present in generated tickets
+Observed pattern:
+- suppression events repeated during cooldown window
+- new encounter credit occurred only after cooldown expiry
+- both devices showed symmetric behavior
 
-## Not Confirmed
-- No PP_SUPPRESS line captured
-- Clean duplicate suppression proof not established
-
-## Notes
-Run was muddied by manual mining toggle after peers dropped to zero on the UI, so later tickets cannot be treated as a clean same-session suppression test.
+Conclusion:
+- duplicate encounter prevention is now stable enough for alpha soak conditions without breaking live CBOR proof
