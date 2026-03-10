@@ -37,12 +37,14 @@ class PresenceHandshakeCoordinator(
     private var localEphemeralPublic: String? = null
     private val activePeer = AtomicReference<String?>(null)
     private val lastHeartbeatSeen = ConcurrentHashMap<String, Long>()
+    private val lastLedgerCreditMs = ConcurrentHashMap<String, Long>()
 
 
     companion object {
         private const val TAG = "PresenceHandshake"
         private const val HANDSHAKE_COOLDOWN_MS = 30_000L
         private const val SUCCESS_COOLDOWN_MS = 120_000L
+        private const val LEDGER_CREDIT_COOLDOWN_MS = 300_000L
     }
 
     fun recordSeen(peerId: String) {
@@ -109,7 +111,6 @@ class PresenceHandshakeCoordinator(
         val now = SystemClock.elapsedRealtime()
         peers[peerId]?.apply {
             state = HandshakeState.HANDSHAKE_COMPLETE
-            lastSuccessMs = now
         }
         Log.e(TAG, "PP_HANDSHAKE HANDSHAKE_COMPLETE peer=$peerId")
         Log.d(TAG, "PIPE_HANDSHAKE_COMPLETE peer=$peerId stage=handshake_complete")
@@ -123,6 +124,13 @@ class PresenceHandshakeCoordinator(
         }
 
         lastHeartbeatSeen[peerId] = currentHeartbeatId
+
+        val lastCreditMs = lastLedgerCreditMs[peerId]
+        if (lastCreditMs != null && now - lastCreditMs < LEDGER_CREDIT_COOLDOWN_MS) {
+            Log.e(TAG, "PP_SUPPRESS cooldown peer=$peerId cooldownMs=" + (LEDGER_CREDIT_COOLDOWN_MS - (now - lastCreditMs)))
+            activePeer.compareAndSet(peerId, null)
+            return
+        }
 
         val localDeviceAKey = localEphemeralPublic ?: "ephemeral_missing"
         val deviceASignature = localEphemeralKeyPair?.let {
@@ -166,6 +174,8 @@ class PresenceHandshakeCoordinator(
         Log.d(TAG, "PIPE_TICKET_GENERATED peer=$peerId encounterId=${ticket.encounterId} stage=ticket_generated")
         Log.e(TAG, "PP_TICKET JSON " + ticket.toJson())
         miningLedger.recordEncounter()
+        lastLedgerCreditMs[peerId] = now
+        peers[peerId]?.lastSuccessMs = now
         Log.d(TAG, "PIPE_LEDGER_CREDIT peer=$peerId encounterId=${ticket.encounterId} stage=ledger_credit")
         activePeer.compareAndSet(peerId, null)
     }
