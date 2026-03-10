@@ -107,44 +107,29 @@ class PresenceGattServer(
     }
 
     private fun handleHelloWrite(device: BluetoothDevice, value: ByteArray) {
-        when (TransportConfig.transportMode) {
-            TransportMode.RAW_PROBE -> {
-                if (value.contentEquals(byteArrayOf(0x50, 0x50, 0x48, 0x31))) {
-                    Log.d(TAG, "HELLO_RX_RAW addr=${device.address} bytes=${value.size}")
-                    val payload = byteArrayOf(0x50, 0x50, 0x52, 0x31)
-                    val ok = notifyIfEnabled(device, payload)
-                    Log.d(TAG, "REPLY_TX_RAW addr=${device.address} ok=$ok bytes=${payload.size}")
-                } else {
-                    Log.w(TAG, "HELLO_RX_RAW unexpected addr=${device.address} bytes=${value.size}")
-                }
-            }
-
-            TransportMode.CBOR_PROBE -> {
-                try {
-                    val hello = PresenceCborPackets.decodeHello(value)
-                    Log.d(
-                        TAG,
-                        "HELLO_RX addr=${device.address} bytes=${value.size} ver=${hello.version} sid=${hello.sessionId.size} nonce=${hello.nonce.size}"
-                    )
-                    val reply = ReplyPacket(
-                        version = hello.version,
-                        sessionId = hello.sessionId,
-                        nonce = hello.nonce,
-                        serverPublicKey = ByteArray(32),
-                        signature = ByteArray(64),
-                        statusCode = 0
-                    )
-                    val payload = PresenceCborPackets.encodeReply(reply)
-                    val ok = notifyIfEnabled(device, payload)
-                    Log.d(TAG, "REPLY_TX addr=${device.address} ok=$ok bytes=${payload.size}")
-                } catch (t: Throwable) {
-                    Log.w(
-                        TAG,
-                        "HELLO_RX decode failed from=${device.address} err=${t.message} bytes=${value.size} hex=" +
-                            value.joinToString("") { "%02x".format(it) }
-                    )
-                }
-            }
+        try {
+            val hello = PresenceCborPackets.decodeHello(value)
+            Log.d(
+                TAG,
+                "HELLO_RX addr=${device.address} bytes=${value.size} ver=${hello.version} sid=${hello.sessionId.size} nonce=${hello.nonce.size}"
+            )
+            val reply = ReplyPacket(
+                version = hello.version,
+                sessionId = hello.sessionId,
+                nonce = hello.nonce,
+                serverPublicKey = ByteArray(32),
+                signature = ByteArray(64),
+                statusCode = 0
+            )
+            val payload = PresenceCborPackets.encodeReply(reply)
+            val ok = notifyIfEnabled(device, payload)
+            Log.d(TAG, "REPLY_TX addr=${device.address} ok=$ok bytes=${payload.size}")
+        } catch (t: Throwable) {
+            Log.w(
+                TAG,
+                "HELLO_RX decode failed from=${device.address} err=${t.message} bytes=${value.size} hex=" +
+                    value.joinToString("") { "%02x".format(it) }
+            )
         }
     }
 

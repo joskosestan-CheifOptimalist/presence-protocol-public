@@ -189,7 +189,7 @@ class PresenceGattClient(
                 if (value.contentEquals(byteArrayOf(0x50, 0x50, 0x52, 0x31))) {
                     Log.d(TAG, "REPLY_RX_RAW addr=${gatt.device.address} bytes=${value.size}")
                     lastDeviceBEphemeralKey = gatt.device.address
-                    lastDeviceBSignature = "device_b_sig_raw_probe"
+                    lastDeviceBSignature = "device_b_sig_placeholder"
                     lastReplyHash = sha256Hex(value)
                 } else {
                     val replyText = String(value, Charsets.UTF_8)
@@ -235,27 +235,21 @@ class PresenceGattClient(
     private fun writeHello(gatt: BluetoothGatt) {
         val characteristic = helloCharacteristic ?: return
 
-        val payload = when (TransportConfig.transportMode) {
-            TransportMode.RAW_PROBE -> byteArrayOf(0x50, 0x50, 0x48, 0x31)
-            TransportMode.CBOR_PROBE -> {
-                val hello = HelloPacket(
-                    version = 1,
-                    sessionId = ByteArray(1).also { secureRandom.nextBytes(it) },
-                    nonce = ByteArray(1).also { secureRandom.nextBytes(it) },
-                    clientPublicKey = ByteArray(1),
-                    timestampSeconds = 1L
-                )
-                PresenceCborPackets.encodeHello(hello)
-            }
-        }
+        val payload = PresenceCborPackets.encodeHello(
+            HelloPacket(
+                version = 1,
+                sessionId = ByteArray(1).also { secureRandom.nextBytes(it) },
+                nonce = ByteArray(1).also { secureRandom.nextBytes(it) },
+                clientPublicKey = ByteArray(1),
+                timestampSeconds = 1L
+            )
+        )
 
         pendingHelloBytes = payload
         lastHelloHash = sha256Hex(payload)
+
         Log.d(TAG, "HELLO_BUILD addr=${gatt.device.address} mode=${TransportConfig.transportMode} bytes=${payload.size} hash=${lastHelloHash}")
-        characteristic.writeType = when (TransportConfig.transportMode) {
-            TransportMode.RAW_PROBE -> BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-            TransportMode.CBOR_PROBE -> BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-        }
+        characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
         characteristic.value = payload
         Log.d(TAG, "HELLO_WRITE_REQUEST addr=${gatt.device.address} writeType=${characteristic.writeType} bytes=${payload.size}")
         gatt.writeCharacteristic(characteristic)
