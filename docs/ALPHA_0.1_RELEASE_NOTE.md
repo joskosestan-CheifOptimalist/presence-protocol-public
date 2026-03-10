@@ -86,3 +86,5 @@ Verified live:
 Key fix:
 - CBOR transport was being truncated at default ATT payload size
 - MTU negotiation plus no-response write mode for CBOR resolved the truncation path
+
+- 2026-03-10: pure CBOR-only transport re-proven live on A17 (R5GYC0FZ6RY) and S23 (R5CR700RAQF); MTU 185->517; HELLO 29 bytes; REPLY 133 bytes; PP_VERIFY true/true; PP_TICKET GENERATED; PIPE_LEDGER_CREDIT; PIPE_UI_REFRESH.
