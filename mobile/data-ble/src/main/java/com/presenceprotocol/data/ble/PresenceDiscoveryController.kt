@@ -135,7 +135,9 @@ class PresenceDiscoveryController(
     @SuppressLint("MissingPermission")
     private fun startScanning() {
         val scanner: BluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner ?: return
-        val filter = ScanFilter.Builder().setServiceUuid(serviceParcelUuid).build()
+        val filter = ScanFilter.Builder()
+            .setServiceUuid(serviceParcelUuid)
+            .build()
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
@@ -176,6 +178,7 @@ class PresenceDiscoveryController(
         val peerId = device.address ?: return
         val scanRecord = result.scanRecord
         val serviceUuids = scanRecord?.serviceUuids?.joinToString(",") { it.uuid.toString() } ?: "none"
+        val serviceData = scanRecord?.getServiceData(serviceParcelUuid)?.joinToString("") { "%02x".format(it) } ?: "none"
         val deviceName = try { device.name } catch (_: SecurityException) { null }
 
         val nowElapsed = SystemClock.elapsedRealtime()
@@ -183,7 +186,7 @@ class PresenceDiscoveryController(
         if (previousSeen == null || nowElapsed - previousSeen > PEER_LOG_WINDOW_MS) {
             Log.e(
                 TAG,
-                "PP_DISCOVERY TARGET_MATCH addr=" + device.address + " name=" + deviceName + " rssi=" + result.rssi + " uuids=" + serviceUuids
+                "PP_DISCOVERY TARGET_MATCH addr=" + device.address + " name=" + deviceName + " rssi=" + result.rssi + " uuids=" + serviceUuids + " serviceData=" + serviceData
             )
         }
         lastSeenMap[peerId] = nowElapsed
@@ -235,5 +238,6 @@ class PresenceDiscoveryController(
         private const val PRUNE_INTERVAL_MS = 5_000L
 
         val PRESENCE_SERVICE_UUID: UUID = UUID.fromString("7d3a2d6b-9b7a-4f2a-9e5e-0c9d6f1b1c01")
+        val PRESENCE_SERVICE_DATA: ByteArray = byteArrayOf(0x50, 0x50, 0x31)
     }
 }
