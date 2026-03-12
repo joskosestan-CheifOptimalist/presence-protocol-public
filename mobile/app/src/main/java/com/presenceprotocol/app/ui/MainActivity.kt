@@ -35,8 +35,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -336,19 +343,33 @@ private fun MiningCountersCard(uiState: DashboardUiState) {
     }
 }
 
+private enum class WalletUiState {
+    NotConnected,
+    Connecting,
+    Connected
+}
+
 @Composable
 private fun SettlementLayerCard(uiState: DashboardUiState) {
+    val walletUiState = WalletUiState.NotConnected
+    val walletStatusText = when (walletUiState) {
+        WalletUiState.NotConnected -> "Not Connected"
+        WalletUiState.Connecting -> "Connecting..."
+        WalletUiState.Connected -> "Connected"
+    }
+    var showWalletPreview by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(196.dp),
+            .height(232.dp),
         colors = CardDefaults.cardColors(containerColor = GoldPale),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Wallet & Settlement", fontSize = 14.sp, color = Olive, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                Text(text = "Olivebranch", fontSize = 12.sp, color = Gold)
+                Text(text = "Wallet Preview", fontSize = 12.sp, color = Gold)
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -361,20 +382,129 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
                 LayerChip("Midnight", LayerMidnight)
                 LayerChip("Cardano", LayerCardano)
             }
-            Spacer(modifier = Modifier.height(14.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "Wallet", fontSize = 12.sp, color = Gray)
-                    Text(text = "Not Connected", fontSize = 16.sp, color = Dark, fontWeight = FontWeight.Medium)
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "Claimable", fontSize = 12.sp, color = Gray)
-                    Text(text = String.format("%.2f POP", uiState.totalBalance), fontSize = 16.sp, color = Gold, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedButton(
+                onClick = { showWalletPreview = true },
+                modifier = Modifier.fillMaxWidth(),
+                border = BorderStroke(1.dp, Olive),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Olive
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Wallet Preview",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Preview future wallet connection and settlement",
+                        fontSize = 11.sp,
+                        color = Mid
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(text = "Claimable", fontSize = 12.sp, color = Gray)
+                Text(
+                    text = String.format("%.2f POP", uiState.totalBalance),
+                    fontSize = 18.sp,
+                    color = Gold,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { showWalletPreview = true },
+                    modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, Olive),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Olive
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(
+                        text = "Wallet Preview",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Button(
+                    onClick = { },
+                    enabled = false,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Olive,
+                        contentColor = GoldPale,
+                        disabledContainerColor = Olive.copy(alpha = 0.45f),
+                        disabledContentColor = GoldPale.copy(alpha = 0.75f)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(
+                        text = "Claim POP",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = "Presence mining stays separate from wallet signing. Settlement follows later through Cardano-aligned flows.", fontSize = 12.sp, color = Mid)
+            Text(text = "Tap Wallet Preview for future settlement view.", fontSize = 12.sp, color = Mid)
         }
+    }
+
+    if (showWalletPreview) {
+        AlertDialog(
+            onDismissRequest = { showWalletPreview = false },
+            title = {
+                Text(
+                    text = "Wallet Preview",
+                    color = Olive,
+                    fontWeight = FontWeight.SemiBold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "This is a future settlement preview for Presence Protocol.",
+                        fontSize = 14.sp,
+                        color = Dark
+                    )
+                    Text(
+                        text = "Connection and claim flows are preview only for now.",
+                        fontSize = 13.sp,
+                        color = Mid
+                    )
+                    Text(
+                        text = "Presence mining stays separate from wallet signing.",
+                        fontSize = 13.sp,
+                        color = Mid
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showWalletPreview = false }) {
+                    Text("Close", color = Olive, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            containerColor = GoldPale,
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 }
 
