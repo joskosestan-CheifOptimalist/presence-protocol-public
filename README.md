@@ -1,23 +1,38 @@
 # Presence Protocol
 
-Privacy-preserving proof-of-presence + witnessing primitive for the Cardano ecosystem.
+Presence Protocol is a privacy-preserving proof-of-presence and witnessing primitive being developed for the Cardano ecosystem.
+
+## Public repository purpose
+
+This repository is the public-facing documentation layer for the project.
+
+It contains:
+- high-level architecture
+- product goal and current status
+- public whitepaper and outline material
+- roadmap and supporting documentation
+
+It does not contain:
+- mobile source code
+- detailed BLE/GATT transport logic
+- internal QA run logs
+- protocol execution traces
+- sensitive implementation planning notes
 
 ## Repository layout
-- `docs/` – whitepaper + planning PDFs, setup guide, weekly status template.
-- `architecture/` – protocol + system design (BLE handshake, CBOR receipts, threat model).
-- `roadmap/` – six-month solo MVP milestones.
-- `mobile/` – Android Presence app (Jetpack Compose, BLE, sensors).
-- `backend/` – ingestion, batching, API (stubbed).
-- `onchain/` – Cardano anchoring scripts (stubbed).
-- `sdk/` – verifier SDK + tools (stubbed).
 
-## Getting Started
-1. Read `docs/SETUP.md` for toolchain requirements (Android Studio, Cardano CLI, etc.).
-2. Browse `architecture/` for component + threat-model overview.
-3. Track weekly progress via `docs/STATUS_TEMPLATE.md` and `presence-protocol/ARCHITECT_LOG.md` (outside repo for now).
+- `docs/` — public documentation, whitepaper, architecture outline, setup-oriented guidance
+- `architecture/` — high-level protocol and receipt format material
+- `roadmap/` — milestone direction
+- `backend/` — public placeholder for backend-facing work
+- `onchain/` — public placeholder for on-chain work
+- `sdk/` — public placeholder for verifier SDK direction
 
-## Status (2026-02-20)
-- Planning documents committed to `docs/`.
-- Architecture doc expanded with component map + threat snapshot + dependency assumptions.
-- Mobile module design documented; Android Studio project scaffolding kicks off during P0.
-- Setup + status templates added to guide incoming contributors.
+## Current state
+
+Presence Protocol is in active development.
+The public repo is intentionally high-level while detailed implementation and QA materials are maintained privately.
+
+## Public note
+
+Sensitive implementation details are intentionally excluded from this repository while the protocol matures.
