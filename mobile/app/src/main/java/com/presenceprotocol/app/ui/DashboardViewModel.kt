@@ -27,6 +27,11 @@ class DashboardViewModel(
 
     private var discoveryStarted = false
     private var heartbeatJob: Job? = null
+    private var miningSessionStartedAt: Long = 0L
+
+    companion object {
+        private const val PROTOCOL_EPOCH_MS = 5 * 60 * 1000L
+    }
 
     init {
         viewModelScope.launch {
@@ -70,11 +75,14 @@ class DashboardViewModel(
             gattServer.start(); // Start the server first
             discoveryController.start()
             discoveryStarted = true
+            miningSessionStartedAt = System.currentTimeMillis()
+            ledger.updateEpoch(1)
             startHeartbeat()
             _uiState.value = _uiState.value.copy(
                 isMining = true,
                 debugState = "DISCOVERY_ACTIVE",
-                networkHealth = "Live"
+                networkHealth = "Live",
+                epoch = 1
             )
         }
     }
@@ -86,6 +94,7 @@ class DashboardViewModel(
             discoveryController.stop()
             gattServer.stop()
             discoveryStarted = false
+            miningSessionStartedAt = 0L
             stopHeartbeat()
             _uiState.value = _uiState.value.copy(
                 isMining = false,
@@ -133,12 +142,15 @@ class DashboardViewModel(
         if (heartbeatJob?.isActive == true) return
         heartbeatJob = viewModelScope.launch {
             while (true) {
-                val nextEpoch = _uiState.value.epoch + 1
-                ledger.updateEpoch(nextEpoch)
+                val now = System.currentTimeMillis()
+                val computedEpoch = if (miningSessionStartedAt == 0L) 1 else (((now - miningSessionStartedAt) / PROTOCOL_EPOCH_MS).toInt()) + 1
+                val epochChanged = computedEpoch != _uiState.value.epoch
+                if (epochChanged) ledger.updateEpoch(computedEpoch)
                 _uiState.value = _uiState.value.copy(
                     heartbeatTick = _uiState.value.heartbeatTick + 1,
-                    lastHeartbeatAt = System.currentTimeMillis(),
-                    epoch = nextEpoch,
+                    lastHeartbeatAt = now,
+                    epoch = computedEpoch,
+                    encountersThisEpoch = if (epochChanged) 0 else _uiState.value.encountersThisEpoch,
                     networkHealth = "Live"
                 )
                 delay(1200)

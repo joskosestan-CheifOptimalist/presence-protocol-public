@@ -322,7 +322,7 @@ private fun MiningCountersCard(uiState: DashboardUiState) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Mining Counters", fontSize = 14.sp, modifier = Modifier.weight(1f))
-                Text(text = "Epoch ${uiState.epoch}", fontSize = 12.sp, color = Gray)
+                Text(text = "Protocol Epoch ${uiState.epoch}", fontSize = 12.sp, color = Gray)
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -343,20 +343,8 @@ private fun MiningCountersCard(uiState: DashboardUiState) {
     }
 }
 
-private enum class WalletUiState {
-    NotConnected,
-    Connecting,
-    Connected
-}
-
 @Composable
 private fun SettlementLayerCard(uiState: DashboardUiState) {
-    val walletUiState = WalletUiState.NotConnected
-    val walletStatusText = when (walletUiState) {
-        WalletUiState.NotConnected -> "Not Connected"
-        WalletUiState.Connecting -> "Connecting..."
-        WalletUiState.Connected -> "Connected"
-    }
     var showWalletPreview by remember { mutableStateOf(false) }
 
     Card(
