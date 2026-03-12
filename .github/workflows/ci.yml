@@ -1,21 +1,27 @@
 name: ci
 
 on:
-  pull_request:
   push:
     branches: [ main ]
+  pull_request:
 
 jobs:
-  lint-docs:
+  docs-sanity:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Spell check docs (placeholder)
-        run: echo "TODO: add markdown lint" 
 
-  mobile-sanity:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Gradle wrapper exists
-        run: test -f gradlew || echo "TODO: add Android build once module exists"
+      - name: List public docs
+        run: |
+          echo "Public repo docs sanity check"
+          test -f README.md
+          test -d docs
+          find docs -maxdepth 2 -type f | sort
+
+      - name: Confirm sanitized repo shape
+        run: |
+          if [ -d mobile ]; then
+            echo "Unexpected mobile directory present in public repo"
+            exit 1
+          fi
+          echo "Sanitized public repo confirmed"
