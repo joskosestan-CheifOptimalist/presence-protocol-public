@@ -43,6 +43,9 @@ class PresenceDiscoveryController(
     private val context: Context,
     private val presenceGattServer: PresenceGattServer,
     private val miningLedger: com.presenceprotocol.domain.MiningLedger,
+    private val encounterStore: EncounterStore,
+    private val allowInitiation: Boolean = true,
+    private val providedHandshakeCoordinator: PresenceHandshakeCoordinator? = null,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
 
@@ -60,7 +63,8 @@ class PresenceDiscoveryController(
     val peerEvents: SharedFlow<PeerEvent> = _peerEvents.asSharedFlow()
 
     private val lastSeenMap = mutableMapOf<String, Long>()
-    private val handshakeCoordinator by lazy { PresenceHandshakeCoordinator(bluetoothAdapter, miningLedger) }
+    private val lastRoleSkipLogMap = mutableMapOf<String, Long>()
+    private val handshakeCoordinator by lazy { providedHandshakeCoordinator ?: PresenceHandshakeCoordinator(bluetoothAdapter, miningLedger, encounterStore) }
     private val gattClient by lazy { PresenceGattClient(context, handshakeCoordinator) }
 
     private val started = AtomicBoolean(false)
@@ -197,9 +201,16 @@ class PresenceDiscoveryController(
             _peerEvents.tryEmit(PeerEvent(peerId, Instant.now()))
         }
 
-        if (handshakeCoordinator.shouldInitiate(device)) {
+        if (allowInitiation && handshakeCoordinator.shouldInitiate(device)) {
+            Log.d(TAG, "CONNECT_ATTEMPT addr=$peerId rssi=${result.rssi} allowInitiation=$allowInitiation")
             handshakeCoordinator.markConnectStart(peerId)
             gattClient.onPeerSeen(device)
+        } else if (!allowInitiation) {
+            val lastSkip = lastRoleSkipLogMap[peerId]
+            if (lastSkip == null || nowElapsed - lastSkip > PEER_LOG_WINDOW_MS) {
+                Log.d(TAG, "CONNECT_SKIP_ROLE addr=$peerId allowInitiation=$allowInitiation")
+                lastRoleSkipLogMap[peerId] = nowElapsed
+            }
         }
 
         updateMetrics(nowElapsed)

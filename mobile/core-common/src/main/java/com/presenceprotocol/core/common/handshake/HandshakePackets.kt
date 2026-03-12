@@ -5,7 +5,8 @@ data class HelloPacket(
     val sessionId: ByteArray,
     val nonce: ByteArray,
     val clientPublicKey: ByteArray,
-    val timestampSeconds: Long
+    val timestampSeconds: Long,
+    val appInstanceId: String
 )
 
 data class ReplyPacket(

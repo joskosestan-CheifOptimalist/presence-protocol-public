@@ -12,7 +12,8 @@ object PresenceCborPackets {
             sessionId = map.getField(KEY_SESSION_ID).asByteString(),
             nonce = map.getField(KEY_NONCE).asByteString(),
             clientPublicKey = map.getField(KEY_CLIENT_PK).asByteString(),
-            timestampSeconds = map.getField(KEY_TIMESTAMP).AsInt64()
+            timestampSeconds = map.getField(KEY_TIMESTAMP).AsInt64(),
+            appInstanceId = map.getField(KEY_APP_INSTANCE_ID).AsString()
         )
     }
 
@@ -23,6 +24,7 @@ object PresenceCborPackets {
             putKey(KEY_NONCE, CBORObject.FromObject(packet.nonce))
             putKey(KEY_CLIENT_PK, CBORObject.FromObject(packet.clientPublicKey))
             putKey(KEY_TIMESTAMP, CBORObject.FromObject(packet.timestampSeconds))
+            putKey(KEY_APP_INSTANCE_ID, CBORObject.FromObject(packet.appInstanceId))
         }
         return obj.EncodeToBytes()
     }

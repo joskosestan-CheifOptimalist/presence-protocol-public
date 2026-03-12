@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.presenceprotocol.data.ble.PresenceHandshakeCoordinator
 import com.presenceprotocol.core.common.cbor.PresenceCborPackets
 import com.presenceprotocol.core.common.config.TransportConfig
 import com.presenceprotocol.core.common.config.TransportMode
@@ -22,7 +23,8 @@ import java.util.UUID
  * Phase 2B: HELLO → REPLY transport proof (Peripheral / Server role).
  */
 class PresenceGattServer(
-    private val context: Context
+    private val context: Context,
+    private val handshakeCoordinator: PresenceHandshakeCoordinator? = null
 ) {
     private var gattServer: BluetoothGattServer? = null
     private var serverStarted: Boolean = false
@@ -128,6 +130,19 @@ class PresenceGattServer(
             val payload = PresenceCborPackets.encodeReply(reply)
             val ok = notifyIfEnabled(device, payload)
             Log.d(TAG, "REPLY_TX addr=${device.address} ok=$ok bytes=${payload.size}")
+
+            if (ok) {
+                val canonicalPeerKey =
+                    listOf(hello.appInstanceId, reply.appInstanceId).sorted().joinToString("|")
+                handshakeCoordinator?.markResponderComplete(
+                    peerId = device.address,
+                    stablePeerId = canonicalPeerKey,
+                    helloHash = sha256Hex(value),
+                    replyHash = sha256Hex(payload),
+                    appVersion = getAppVersion(),
+                    handshakeTimestampMs = hello.timestampSeconds * 1000L
+                )
+            }
         } catch (t: Throwable) {
             Log.w(
                 TAG,
@@ -203,6 +218,22 @@ class PresenceGattServer(
         serverStarted = true
         Log.d(TAG, "Presence GATT server started")
         return true
+    }
+
+    private fun getAppVersion(): String {
+        return try {
+            val pm = context.packageManager
+            val pkg = context.packageName
+            val info = pm.getPackageInfo(pkg, 0)
+            info.versionName ?: "dev"
+        } catch (_: Throwable) {
+            "dev"
+        }
+    }
+
+    private fun sha256Hex(bytes: ByteArray): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(bytes)
+        return digest.joinToString("") { "%02x".format(it) }
     }
 
     private fun getAppInstanceId(): String {

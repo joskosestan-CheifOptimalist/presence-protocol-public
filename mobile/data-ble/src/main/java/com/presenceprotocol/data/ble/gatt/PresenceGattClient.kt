@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -28,6 +29,7 @@ class PresenceGattClient(
     private val handshakeCoordinator: PresenceHandshakeCoordinator
 ) {
     private val secureRandom = SecureRandom()
+    private val prefs: SharedPreferences = context.getSharedPreferences("presence_protocol", Context.MODE_PRIVATE)
     private val lastAttempts = mutableMapOf<String, Long>()
 
     private var bluetoothGatt: BluetoothGatt? = null
@@ -49,7 +51,10 @@ class PresenceGattClient(
     fun onPeerSeen(device: BluetoothDevice) {
         val address = device.address ?: return
         val now = SystemClock.elapsedRealtime()
-        if (bluetoothGatt != null) return
+        if (bluetoothGatt != null) {
+            Log.d(TAG, "CLIENT_CONNECT_SKIPPED busy current=${currentAddress ?: "unknown"} seen=$address")
+            return
+        }
         val last = lastAttempts[address] ?: 0L
         if (now - last < CONNECT_BACKOFF_MS) return
         lastAttempts[address] = now
@@ -221,14 +226,16 @@ class PresenceGattClient(
 
                 val appVersion = getAppVersion()
                 val transportPeerId = gatt.device.address
-                val stablePeerId = lastRemoteAppInstanceId ?: lastDeviceBEphemeralKey ?: transportPeerId
+                val remoteAppInstanceId = lastRemoteAppInstanceId ?: lastDeviceBEphemeralKey ?: transportPeerId
+                val localAppInstanceId = getLocalAppInstanceId()
+                val canonicalPeerKey = listOf(localAppInstanceId, remoteAppInstanceId).sorted().joinToString("|")
                 handshakeCoordinator.markNotifyReceived(transportPeerId)
                 handshakeCoordinator.markComplete(
                     transportPeerId,
                     helloHash = lastHelloHash ?: "hello_hash_missing",
                     replyHash = lastReplyHash ?: "reply_hash_missing",
                     appVersion = appVersion,
-                    deviceBEphemeralKey = stablePeerId,
+                    deviceBEphemeralKey = canonicalPeerKey,
                     deviceBSignature = lastDeviceBSignature ?: "device_b_sig_missing"
                 )
                 cleanup("reply received")
@@ -252,13 +259,15 @@ class PresenceGattClient(
     private fun writeHello(gatt: BluetoothGatt) {
         val characteristic = helloCharacteristic ?: return
 
+        val nowSeconds = System.currentTimeMillis() / 1000L
         val payload = PresenceCborPackets.encodeHello(
             HelloPacket(
                 version = 1,
                 sessionId = ByteArray(1).also { secureRandom.nextBytes(it) },
                 nonce = ByteArray(1).also { secureRandom.nextBytes(it) },
                 clientPublicKey = ByteArray(1),
-                timestampSeconds = 1L
+                timestampSeconds = nowSeconds,
+                appInstanceId = getAppInstanceId()
             )
         )
 
@@ -299,6 +308,19 @@ class PresenceGattClient(
                 if (idx <= 0) null else it.substring(0, idx) to it.substring(idx + 1)
             }
             .toMap()
+    }
+
+    private fun getAppInstanceId(): String {
+        val existing = prefs.getString("app_instance_id", null)
+        if (existing != null) return existing
+        val created = UUID.randomUUID().toString()
+        prefs.edit().putString("app_instance_id", created).apply()
+        return created
+    }
+
+    private fun getLocalAppInstanceId(): String {
+        val prefs = context.getSharedPreferences("presence_protocol", Context.MODE_PRIVATE)
+        return prefs.getString("app_instance_id", null) ?: "app_instance_missing"
     }
 
     private fun getAppVersion(): String {

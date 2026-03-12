@@ -12,7 +12,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 class PresenceHandshakeCoordinator(
     private val bluetoothAdapter: BluetoothAdapter?,
-    private val miningLedger: MiningLedger
+    private val miningLedger: MiningLedger,
+    private val encounterStore: EncounterStore
 ) {
     enum class HandshakeState {
         DISCOVERED,
@@ -80,11 +81,7 @@ class PresenceHandshakeCoordinator(
         val info = peers.getOrPut(peerId) { PeerHandshakeInfo(peerId = peerId) }
         info.lastAttemptMs = now
         info.state = HandshakeState.CONNECT_ATTEMPT
-        if (localEphemeralKeyPair == null || localEphemeralPublic == null) {
-            val (pair, pub) = EphemeralKeys.generate()
-            localEphemeralKeyPair = pair
-            localEphemeralPublic = pub
-        }
+        ensureLocalEphemeral()
         Log.e(TAG, "PP_HANDSHAKE CONNECT_START peer=$peerId")
         Log.e(TAG, "PP_CONFIG transportMode=${TransportConfig.transportMode} ledgerCreditCooldownMs=${TransportConfig.LEDGER_CREDIT_COOLDOWN_MS}")
         Log.d(TAG, "PIPE_CONNECT_START peer=$peerId stage=connect_start")
@@ -114,7 +111,7 @@ class PresenceHandshakeCoordinator(
         Log.d(TAG, "PIPE_NOTIFY_RECEIVED peer=$peerId stage=notify_received")
     }
 
-    fun markComplete(peerId: String, helloHash: String = "hello_hash_placeholder", replyHash: String = "reply_hash_placeholder", appVersion: String = "dev", deviceBEphemeralKey: String = peerId, deviceBSignature: String = "device_b_sig_placeholder") {
+    fun markComplete(peerId: String, helloHash: String = "hello_hash_placeholder", replyHash: String = "reply_hash_placeholder", appVersion: String = "dev", deviceBEphemeralKey: String = peerId, deviceBSignature: String = "device_b_sig_placeholder", handshakeTimestampMs: Long = System.currentTimeMillis()) {
         val now = SystemClock.elapsedRealtime()
         val rewardPeerId = deviceBEphemeralKey
         peers[peerId]?.apply {
@@ -174,6 +171,7 @@ class PresenceHandshakeCoordinator(
             deviceAEphemeralKey = localDeviceAKey,
             helloHash = helloHash,
             replyHash = replyHash,
+            handshakeTimestampMs = handshakeTimestampMs,
             appVersion = appVersion,
             deviceASignature = deviceASignature,
             deviceBSignature = resolvedDeviceBSignature
@@ -181,11 +179,55 @@ class PresenceHandshakeCoordinator(
         Log.e(TAG, "PP_TICKET GENERATED encounterId=" + ticket.encounterId + " peer=" + rewardPeerId)
         Log.d(TAG, "PIPE_TICKET_GENERATED peer=$rewardPeerId encounterId=${ticket.encounterId} stage=ticket_generated")
         Log.e(TAG, "PP_TICKET JSON " + ticket.toJson())
+
+        if (!ticket.isValid()) {
+            Log.e(TAG, "PP_TICKET_INVALID encounterId=${ticket.encounterId} peer=$rewardPeerId")
+            activePeer.compareAndSet(peerId, null)
+            return
+        }
+
+        val persisted = encounterStore.append(ticket)
+        Log.e(TAG, "PP_TICKET_PERSISTED encounterId=${ticket.encounterId} peer=$rewardPeerId ok=$persisted")
+
+        if (!persisted) {
+            Log.e(TAG, "PP_TICKET_PERSIST_FAIL encounterId=${ticket.encounterId} peer=$rewardPeerId")
+            activePeer.compareAndSet(peerId, null)
+            return
+        }
+
         miningLedger.recordEncounter()
         lastLedgerCreditMs[rewardPeerId] = now
         peers[peerId]?.lastSuccessMs = now
         Log.d(TAG, "PIPE_LEDGER_CREDIT peer=$rewardPeerId encounterId=${ticket.encounterId} stage=ledger_credit")
         activePeer.compareAndSet(peerId, null)
+    }
+
+    fun markResponderComplete(
+        peerId: String,
+        stablePeerId: String,
+        helloHash: String,
+        replyHash: String,
+        appVersion: String,
+        handshakeTimestampMs: Long
+    ) {
+        ensureLocalEphemeral()
+        markComplete(
+            peerId = peerId,
+            helloHash = helloHash,
+            replyHash = replyHash,
+            appVersion = appVersion,
+            deviceBEphemeralKey = stablePeerId,
+            deviceBSignature = "device_b_sig_placeholder",
+            handshakeTimestampMs = handshakeTimestampMs
+        )
+    }
+
+    private fun ensureLocalEphemeral() {
+        if (localEphemeralKeyPair == null || localEphemeralPublic == null) {
+            val (pair, pub) = EphemeralKeys.generate()
+            localEphemeralKeyPair = pair
+            localEphemeralPublic = pub
+        }
     }
 
     fun markFailure(peerId: String, reason: String) {
