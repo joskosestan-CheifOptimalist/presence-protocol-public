@@ -144,19 +144,12 @@ private fun PresenceApp(viewModel: DashboardViewModel) {
                     pill = if (uiState.isMining) "Mining ON" else "Idle",
                     onLongPress = { viewModel.showDeveloperPanel(true) }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 PresencePulseHero(uiState)
-                Spacer(modifier = Modifier.height(8.dp))
                 PrimaryToggle(isMining = uiState.isMining) { viewModel.toggleMining() }
-                Spacer(modifier = Modifier.height(12.dp))
                 VerifiedCard(uiState)
-                Spacer(modifier = Modifier.height(12.dp))
                 YieldCard(uiState)
-                Spacer(modifier = Modifier.height(12.dp))
                 MiningCountersCard(uiState)
-                Spacer(modifier = Modifier.height(12.dp))
                 SettlementLayerCard(uiState)
-                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Details & Logs",
                     color = GoldLight,
@@ -184,8 +177,6 @@ private fun TopBar(title: String, subtitle: String, pill: String, onLongPress: (
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Cream)
-            Spacer(modifier = Modifier.height(2.dp))
             Text(text = subtitle, fontSize = 12.sp, color = GoldLight)
         }
         Box(
@@ -194,7 +185,6 @@ private fun TopBar(title: String, subtitle: String, pill: String, onLongPress: (
                 .background(OlivePale.copy(alpha = 0.18f))
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
-            Text(text = pill, fontSize = 12.sp, color = GoldBright, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -228,12 +218,10 @@ private fun PresencePulseHero(uiState: DashboardUiState) {
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = uiState.peersNearby.toString(), fontSize = 48.sp, fontWeight = FontWeight.Bold, color = GoldBright)
                     Text(text = "Peers Nearby", fontSize = 14.sp)
                     Text(text = uiState.statusText, fontSize = 12.sp, color = Gray)
                 }
             }
-            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = "Presence earns when encounters are mutually signed.",
                 textAlign = TextAlign.Center,
@@ -272,14 +260,11 @@ private fun VerifiedCard(uiState: DashboardUiState) {
                 Text(text = "Peers Seen (10m)", fontSize = 14.sp, modifier = Modifier.weight(1f))
                 Text(text = "Rolling", fontSize = 12.sp, color = Gray)
             }
-            Spacer(modifier = Modifier.height(10.dp))
             Row {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = uiState.peersSeenLast10Minutes.toString(), fontSize = 32.sp, fontWeight = FontWeight.SemiBold)
                     Text(text = "Seen", fontSize = 12.sp)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = uiState.pendingEncounters.toString(), fontSize = 18.sp, fontWeight = FontWeight.Medium)
                     Text(text = "Pending", fontSize = 12.sp)
                 }
             }
@@ -302,9 +287,6 @@ private fun YieldCard(uiState: DashboardUiState) {
                 Text(text = "Mining Yield", fontSize = 14.sp, modifier = Modifier.weight(1f))
                 Text(text = "Settles on sync", fontSize = 12.sp, color = Gray)
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(text = "Today: +${String.format("%.2f", uiState.todayYield)} POP", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
             Text(text = "Total: ${String.format("%.1f", uiState.totalBalance)} POP", fontSize = 16.sp)
         }
     }
@@ -324,18 +306,14 @@ private fun MiningCountersCard(uiState: DashboardUiState) {
                 Text(text = "Mining Counters", fontSize = 14.sp, modifier = Modifier.weight(1f))
                 Text(text = "Protocol Epoch ${uiState.epoch}", fontSize = 12.sp, color = Gray)
             }
-            Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = uiState.encountersThisEpoch.toString(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
                     Text(text = "This Epoch", fontSize = 12.sp)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = uiState.totalEncounters.toString(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
                     Text(text = "Total", fontSize = 12.sp)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = uiState.pendingEncounters.toString(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
                     Text(text = "Pending", fontSize = 12.sp)
                 }
             }
@@ -356,21 +334,17 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Wallet & Settlement", fontSize = 14.sp, color = Olive, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                 Text(text = "Wallet Preview", fontSize = 12.sp, color = Gold)
             }
-            Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LayerChip("Mobile", LayerMobile)
                 LayerChip("Encounter", LayerEncounter)
                 LayerChip("Relay", LayerRelay)
             }
-            Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LayerChip("Midnight", LayerMidnight)
                 LayerChip("Cardano", LayerCardano)
             }
-            Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
                 onClick = { showWalletPreview = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -388,9 +362,7 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
                     Text(
                         text = "Wallet Preview",
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Preview future wallet connection and settlement",
                         fontSize = 11.sp,
@@ -399,7 +371,6 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
 
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Claimable", fontSize = 12.sp, color = Gray)
@@ -407,10 +378,8 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
                     text = String.format("%.2f POP", uiState.totalBalance),
                     fontSize = 18.sp,
                     color = Gold,
-                    fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -427,7 +396,6 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
                     Text(
                         text = "Wallet Preview",
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
@@ -446,12 +414,10 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
                     Text(
                         text = "Claim POP",
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
             Text(text = "Tap Wallet Preview for future settlement view.", fontSize = 12.sp, color = Mid)
         }
     }
@@ -469,17 +435,17 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "This is a future settlement preview for Presence Protocol.",
+                        text = "This panel previews a future settlement experience for Presence Protocol.",
                         fontSize = 14.sp,
                         color = Dark
                     )
                     Text(
-                        text = "Connection and claim flows are preview only for now.",
+                        text = "Wallet connection, signing, and claim flows are not active yet.",
                         fontSize = 13.sp,
                         color = Mid
                     )
                     Text(
-                        text = "Presence mining stays separate from wallet signing.",
+                        text = "Mining remains separate from wallet and settlement logic.",
                         fontSize = 13.sp,
                         color = Mid
                     )
@@ -530,11 +496,7 @@ private fun DeveloperPanel(uiState: DashboardUiState, dismiss: () -> Unit) {
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                Text(text = "Developer", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Spacer(modifier = Modifier.height(12.dp))
 
-                Text(text = "Live Debug Overlay", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
 
                 DebugRow("Mining", if (uiState.isMining) "ON" else "OFF")
                 DebugRow("Debug State", uiState.debugState)
@@ -548,9 +510,6 @@ private fun DeveloperPanel(uiState: DashboardUiState, dismiss: () -> Unit) {
                 DebugRow("Heartbeat", uiState.heartbeatTick.toString())
                 DebugRow("Epoch", uiState.epoch.toString())
 
-                Spacer(modifier = Modifier.height(14.dp))
-                Text(text = "Recent Log", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
 
                 Column(
                     modifier = Modifier
@@ -560,7 +519,6 @@ private fun DeveloperPanel(uiState: DashboardUiState, dismiss: () -> Unit) {
                 ) {
                     uiState.devLog.forEach { entry ->
                         Text(text = entry, fontSize = 12.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
                     }
                     if (uiState.devLog.isEmpty()) {
                         Text(text = "No events yet", fontSize = 12.sp, color = Gray)
@@ -579,7 +537,5 @@ private fun DebugRow(label: String, value: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = label, fontSize = 12.sp, color = Gray)
-        Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
-    Spacer(modifier = Modifier.height(6.dp))
 }
