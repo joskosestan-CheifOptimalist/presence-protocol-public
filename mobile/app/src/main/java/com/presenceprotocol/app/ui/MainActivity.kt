@@ -55,6 +55,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.presenceprotocol.app.ui.theme.PresenceTheme
+import com.presenceprotocol.app.ui.theme.Olive
+import com.presenceprotocol.app.ui.theme.OlivePale
+import com.presenceprotocol.app.ui.theme.GoldBright
+import com.presenceprotocol.app.ui.theme.GoldLight
+import com.presenceprotocol.app.ui.theme.Cream
+import com.presenceprotocol.app.ui.theme.Dark
+import com.presenceprotocol.app.ui.theme.Mid
+import com.presenceprotocol.app.ui.theme.Gray
+import com.presenceprotocol.app.ui.theme.Gold
+import com.presenceprotocol.app.ui.theme.GoldPale
+import com.presenceprotocol.app.ui.theme.LayerMobile
+import com.presenceprotocol.app.ui.theme.LayerEncounter
+import com.presenceprotocol.app.ui.theme.LayerRelay
+import com.presenceprotocol.app.ui.theme.LayerMidnight
+import com.presenceprotocol.app.ui.theme.LayerCardano
 
 class MainActivity : ComponentActivity() {
 
@@ -132,10 +147,12 @@ private fun PresenceApp(viewModel: DashboardViewModel) {
                 YieldCard(uiState)
                 Spacer(modifier = Modifier.height(12.dp))
                 MiningCountersCard(uiState)
+                Spacer(modifier = Modifier.height(12.dp))
+                SettlementLayerCard(uiState)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Details & Logs",
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = GoldLight,
                     fontSize = 13.sp,
                     modifier = Modifier
                         .align(Alignment.Start)
@@ -160,17 +177,17 @@ private fun TopBar(title: String, subtitle: String, pill: String, onLongPress: (
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Cream)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = subtitle, fontSize = 12.sp, color = Color.Gray)
+            Text(text = subtitle, fontSize = 12.sp, color = GoldLight)
         }
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                .background(OlivePale.copy(alpha = 0.18f))
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
-            Text(text = pill, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+            Text(text = pill, fontSize = 12.sp, color = GoldBright, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -181,7 +198,7 @@ private fun PresencePulseHero(uiState: DashboardUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .height(292.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = OlivePale),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(
@@ -196,7 +213,7 @@ private fun PresencePulseHero(uiState: DashboardUiState) {
                 animationSpec = infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing))
             )
             Box(contentAlignment = Alignment.Center) {
-                val primaryColor = MaterialTheme.colorScheme.primary
+                val primaryColor = GoldBright
                 Canvas(modifier = Modifier.size(200.dp)) {
                     drawCircle(
                         color = primaryColor.copy(alpha = pulseAlpha),
@@ -204,9 +221,9 @@ private fun PresencePulseHero(uiState: DashboardUiState) {
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = uiState.peersNearby.toString(), fontSize = 48.sp, fontWeight = FontWeight.Bold)
+                    Text(text = uiState.peersNearby.toString(), fontSize = 48.sp, fontWeight = FontWeight.Bold, color = GoldBright)
                     Text(text = "Peers Nearby", fontSize = 14.sp)
-                    Text(text = uiState.statusText, fontSize = 12.sp, color = Color.Gray)
+                    Text(text = uiState.statusText, fontSize = 12.sp, color = Gray)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -228,7 +245,7 @@ private fun PrimaryToggle(isMining: Boolean, onToggle: () -> Unit) {
             .fillMaxWidth()
             .height(48.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        colors = ButtonDefaults.buttonColors(containerColor = GoldBright, contentColor = Dark)
     ) {
         Text(text = if (isMining) "Stop Mining" else "Start Mining", fontSize = 16.sp)
     }
@@ -240,13 +257,13 @@ private fun VerifiedCard(uiState: DashboardUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = OlivePale),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Peers Seen (10m)", fontSize = 14.sp, modifier = Modifier.weight(1f))
-                Text(text = "Rolling", fontSize = 12.sp, color = Color.Gray)
+                Text(text = "Rolling", fontSize = 12.sp, color = Gray)
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row {
@@ -259,7 +276,7 @@ private fun VerifiedCard(uiState: DashboardUiState) {
                     Text(text = "Pending", fontSize = 12.sp)
                 }
             }
-            Text(text = "Based on BLE discovery", fontSize = 11.sp, color = Color.Gray)
+            Text(text = "Based on BLE discovery", fontSize = 11.sp, color = Gray)
         }
     }
 }
@@ -270,18 +287,18 @@ private fun YieldCard(uiState: DashboardUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .height(132.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = OlivePale),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Mining Yield", fontSize = 14.sp, modifier = Modifier.weight(1f))
-                Text(text = "Settles on sync", fontSize = 12.sp, color = Color.Gray)
+                Text(text = "Settles on sync", fontSize = 12.sp, color = Gray)
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = "Today: +${String.format("%.2f", uiState.todayYield)} PRX", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = "Today: +${String.format("%.2f", uiState.todayYield)} POP", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Total: ${String.format("%.1f", uiState.totalBalance)} PRX", fontSize = 16.sp)
+            Text(text = "Total: ${String.format("%.1f", uiState.totalBalance)} POP", fontSize = 16.sp)
         }
     }
 }
@@ -292,13 +309,13 @@ private fun MiningCountersCard(uiState: DashboardUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .height(132.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = OlivePale),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Mining Counters", fontSize = 14.sp, modifier = Modifier.weight(1f))
-                Text(text = "Epoch ${uiState.epoch}", fontSize = 12.sp, color = Color.Gray)
+                Text(text = "Epoch ${uiState.epoch}", fontSize = 12.sp, color = Gray)
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -316,6 +333,60 @@ private fun MiningCountersCard(uiState: DashboardUiState) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SettlementLayerCard(uiState: DashboardUiState) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(196.dp),
+        colors = CardDefaults.cardColors(containerColor = GoldPale),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(text = "Wallet & Settlement", fontSize = 14.sp, color = Olive, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                Text(text = "Olivebranch", fontSize = 12.sp, color = Gold)
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LayerChip("Mobile", LayerMobile)
+                LayerChip("Encounter", LayerEncounter)
+                LayerChip("Relay", LayerRelay)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LayerChip("Midnight", LayerMidnight)
+                LayerChip("Cardano", LayerCardano)
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Wallet", fontSize = 12.sp, color = Gray)
+                    Text(text = "Not Connected", fontSize = 16.sp, color = Dark, fontWeight = FontWeight.Medium)
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Claimable", fontSize = 12.sp, color = Gray)
+                    Text(text = String.format("%.2f POP", uiState.totalBalance), fontSize = 16.sp, color = Gold, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = "Presence mining stays separate from wallet signing. Settlement follows later through Cardano-aligned flows.", fontSize = 12.sp, color = Mid)
+        }
+    }
+}
+
+@Composable
+private fun LayerChip(label: String, color: Color) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(color.copy(alpha = 0.14f))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Text(text = label, fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -374,7 +445,7 @@ private fun DeveloperPanel(uiState: DashboardUiState, dismiss: () -> Unit) {
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                     if (uiState.devLog.isEmpty()) {
-                        Text(text = "No events yet", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = "No events yet", fontSize = 12.sp, color = Gray)
                     }
                 }
             }
@@ -389,7 +460,7 @@ private fun DebugRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, fontSize = 12.sp, color = Color.Gray)
+        Text(text = label, fontSize = 12.sp, color = Gray)
         Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
     Spacer(modifier = Modifier.height(6.dp))
