@@ -1,7 +1,0 @@
-<resources>
-    <color name="presence_bg">#0B0F19</color>
-    <color name="presence_cyan">#33C4FF</color>
-    <color name="presence_green">#6EE7C9</color>
-    <color name="presence_amber">#FFC970</color>
-    <color name="presence_red">#FF7660</color>
-</resources>
