@@ -35,7 +35,9 @@ class DashboardViewModel(
                     verifiedToday = stats.verifiedToday,
                     pendingEncounters = stats.pending,
                     todayYield = stats.yieldToday,
-                    totalBalance = stats.total
+                    totalBalance = stats.total,
+                    totalEncounters = stats.totalEncounters,
+                    encountersThisEpoch = stats.encountersThisEpoch
                 )
                 android.util.Log.d(
                     "PP_UI",
@@ -54,6 +56,10 @@ class DashboardViewModel(
         }
         viewModelScope.launch {
             discoveryController.peerEvents.collect { event ->
+                _uiState.value = _uiState.value.copy(
+                    lastPeerSeenId = event.peerId,
+                    debugState = "PEER_SEEN"
+                )
                 appendLog("Peer ${event.peerId} seen @ ${event.timestamp}")
             }
         }
@@ -65,7 +71,11 @@ class DashboardViewModel(
             discoveryController.start()
             discoveryStarted = true
             startHeartbeat()
-            _uiState.value = _uiState.value.copy(isMining = true)
+            _uiState.value = _uiState.value.copy(
+                isMining = true,
+                debugState = "DISCOVERY_ACTIVE",
+                networkHealth = "Live"
+            )
         }
     }
 
@@ -77,14 +87,21 @@ class DashboardViewModel(
             gattServer.stop()
             discoveryStarted = false
             stopHeartbeat()
-            _uiState.value = _uiState.value.copy(isMining = false)
+            _uiState.value = _uiState.value.copy(
+                isMining = false,
+                debugState = "STOPPED",
+                networkHealth = "Idle"
+            )
         }
     }
 
     fun toggleMining() {
         android.util.Log.e("PP_BLE", "VM: toggle handler entered")
         val next = !_uiState.value.isMining
-        _uiState.value = _uiState.value.copy(isMining = next)
+        _uiState.value = _uiState.value.copy(
+            isMining = next,
+            debugState = if (next) "TOGGLE_ON" else "TOGGLE_OFF"
+        )
 
         android.util.Log.e("PP_BLE", "VM: BLE_ROLE=${BleConfig.BLE_ROLE} next=$next")
 
@@ -117,6 +134,7 @@ class DashboardViewModel(
         heartbeatJob = viewModelScope.launch {
             while (true) {
                 val nextEpoch = _uiState.value.epoch + 1
+                ledger.updateEpoch(nextEpoch)
                 _uiState.value = _uiState.value.copy(
                     heartbeatTick = _uiState.value.heartbeatTick + 1,
                     lastHeartbeatAt = System.currentTimeMillis(),
@@ -155,7 +173,11 @@ data class DashboardUiState(
     val pendingEncounters: Int = 0,
     val todayYield: Double = 0.0,
     val totalBalance: Double = 0.0,
+    val totalEncounters: Int = 0,
+    val encountersThisEpoch: Int = 0,
     val networkHealth: String = "Stable",
+    val debugState: String = "IDLE",
+    val lastPeerSeenId: String = "-",
     val showDeveloperPanel: Boolean = false,
     val devLog: List<String> = emptyList(),
     val heartbeatTick: Long = 0L,

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -111,6 +112,7 @@ private fun PresenceApp(viewModel: DashboardViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -128,6 +130,8 @@ private fun PresenceApp(viewModel: DashboardViewModel) {
                 VerifiedCard(uiState)
                 Spacer(modifier = Modifier.height(12.dp))
                 YieldCard(uiState)
+                Spacer(modifier = Modifier.height(12.dp))
+                MiningCountersCard(uiState)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Details & Logs",
@@ -283,6 +287,39 @@ private fun YieldCard(uiState: DashboardUiState) {
 }
 
 @Composable
+private fun MiningCountersCard(uiState: DashboardUiState) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(132.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(text = "Mining Counters", fontSize = 14.sp, modifier = Modifier.weight(1f))
+                Text(text = "Epoch ${uiState.epoch}", fontSize = 12.sp, color = Color.Gray)
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = uiState.encountersThisEpoch.toString(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
+                    Text(text = "This Epoch", fontSize = 12.sp)
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = uiState.totalEncounters.toString(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
+                    Text(text = "Total", fontSize = 12.sp)
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = uiState.pendingEncounters.toString(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
+                    Text(text = "Pending", fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun DeveloperPanel(uiState: DashboardUiState, dismiss: () -> Unit) {
     Box(
         modifier = Modifier
@@ -295,25 +332,65 @@ private fun DeveloperPanel(uiState: DashboardUiState, dismiss: () -> Unit) {
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth()
-                .height(400.dp),
+                .fillMaxHeight(0.72f),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.background)
         ) {
             Column(
                 modifier = Modifier
+                    .fillMaxSize()
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
             ) {
-                Text(text = "Developer", fontWeight = FontWeight.Bold)
+                Text(text = "Developer", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(text = "Live Debug Overlay", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(8.dp))
-                uiState.devLog.forEach { entry ->
-                    Text(text = entry, fontSize = 12.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-                if (uiState.devLog.isEmpty()) {
-                    Text(text = "No events yet", fontSize = 12.sp, color = Color.Gray)
+
+                DebugRow("Mining", if (uiState.isMining) "ON" else "OFF")
+                DebugRow("Debug State", uiState.debugState)
+                DebugRow("Status", uiState.statusText)
+                DebugRow("Network", uiState.networkHealth)
+                DebugRow("Last Peer Seen", uiState.lastPeerSeenId)
+                DebugRow("Peers Nearby", uiState.peersNearby.toString())
+                DebugRow("Peers Seen (10m)", uiState.peersSeenLast10Minutes.toString())
+                DebugRow("Pending", uiState.pendingEncounters.toString())
+                DebugRow("Verified Today", uiState.verifiedToday.toString())
+                DebugRow("Heartbeat", uiState.heartbeatTick.toString())
+                DebugRow("Epoch", uiState.epoch.toString())
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(text = "Recent Log", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    uiState.devLog.forEach { entry ->
+                        Text(text = entry, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    if (uiState.devLog.isEmpty()) {
+                        Text(text = "No events yet", fontSize = 12.sp, color = Color.Gray)
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun DebugRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, fontSize = 12.sp, color = Color.Gray)
+        Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    }
+    Spacer(modifier = Modifier.height(6.dp))
 }
