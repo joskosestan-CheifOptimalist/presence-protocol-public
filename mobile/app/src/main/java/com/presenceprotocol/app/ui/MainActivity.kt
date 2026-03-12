@@ -166,6 +166,7 @@ private fun PresenceApp(viewModel: DashboardViewModel) {
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun TopBar(title: String, subtitle: String, pill: String, onLongPress: () -> Unit) {
     Row(
@@ -246,6 +247,7 @@ private fun PrimaryToggle(isMining: Boolean, onToggle: () -> Unit) {
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun VerifiedCard(uiState: DashboardUiState) {
     Card(
@@ -433,14 +435,25 @@ private fun SettlementLayerCard(uiState: DashboardUiState) {
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = "This panel previews a future settlement experience for Presence Protocol.",
                         fontSize = 14.sp,
                         color = Dark
                     )
                     Text(
-                        text = "Wallet connection, signing, and claim flows are not active yet.",
+                        text = "Status: Preview Only",
+                        fontSize = 13.sp,
+                        color = Olive,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Connection: Not Available Yet",
+                        fontSize = 13.sp,
+                        color = Mid
+                    )
+                    Text(
+                        text = "Claim Flow: Disabled",
                         fontSize = 13.sp,
                         color = Mid
                     )
@@ -529,6 +542,7 @@ private fun DeveloperPanel(uiState: DashboardUiState, dismiss: () -> Unit) {
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun DebugRow(label: String, value: String) {
     Row(
